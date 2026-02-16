@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120">
+  <!-- Outer rounded ring -->
+  <rect
+    x="10"
+    y="10"
+    width="280"
+    height="100"
+    rx="50"
+    ry="50"
+    fill="none"
+    stroke="#EE6C4D"
+    stroke-width="20"
+  />
+</svg>
