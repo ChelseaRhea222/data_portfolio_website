@@ -1,0 +1,621 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chelsea Rhea | Data Portfolio</title>
+  <meta name="description" content="Dashboard-style data portfolio showcasing end-to-end pipelines, warehousing, and BI dashboards." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- Main -->
+    <div class="main">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">
+            <img src="assets/profile.png" alt="Chelsea Rhea">
+          </div>
+          <div class="brand-text">
+            Chelsea Rhea
+            <small>Data Portfolio</small>
+          </div>
+        </div>
+
+        <nav class="menu topbar-menu" aria-label="Primary navigation">
+          <a class="item active" href="index.html">Home</a>
+          <a class="item" href="#projects">Projects</a>
+          <a class="item" href="#resume">Resume</a>
+          <div class="divider"></div>
+          <a class="item" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+          <a class="item" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
+        </nav>
+
+     
+      </header>
+
+  
+
+      <!-- Content -->
+      <main class="content" id="overview">
+
+        <!-- KPI Cards (portfolio KPIs) -->
+        <section class="kpis" aria-label="Portfolio KPIs">
+          <article class="kpi">
+            <div class="kpi-title">Contact</div>
+            <div class="kpi-value">765-623-6859</div>
+            <div class="kpi-value">
+              <a class="link" href="mailto:crhea498@gmail.com">Email</a>
+            </div>
+          </article>
+
+          <article class="kpi">
+            <div class="kpi-title">Resume</div>
+            <div class="kpi-value"><a class="link" href="Website-Resume.pdf" aria-label="Github">Download</a></div>
+            
+          </article>
+
+          <article class="kpi">
+            <div class="kpi-title">Github</div>
+            <div class="kpi-value"><a class="link" href="https://github.com/ChelseaRhea222?tab=repositories" aria-label="Github">View Repositories</a></div>
+          </article>
+
+          <article class="kpi">
+            <div class="kpi-title">DataCamp</div>
+            <div class="kpi-value"><a class="link" href="https://www.datacamp.com/portfolio/rheac" aria-label="DataCamp">View Portfolio</a></div>
+          </article>
+
+        </section>
+
+      <!----------------------------------------------------- Main PROJECT SECTION ---------------------------------->
+      <!-- Section label: ● Projects -->
+<section id="projects" style="margin-top:14px;"></section>
+      <div class="projects-block">
+
+<hr class="section-rule" />
+
+
+        <!-- Header card -->
+    <section class="card" aria-label="Charts screenshot">
+  <div class="card-head">
+    <h3>Charts</h3>
+  </div>
+
+  <div style="margin-top:10px;">
+    <img
+      src="assets/charts.PNG"
+      alt="Charts screenshot"
+      style="width:100%; display:block; border-radius:12px; border:1px solid var(--border); box-shadow: var(--shadow-soft);"
+    />
+  </div>
+</section>
+
+        <!-- Header card -->
+    <section class="card" style="margin-top:14px;" aria-label="Projects header">
+  <div class="card-head">
+    <h3>Tools</h3>
+  </div>
+
+  <div class="tools-row">
+    <div class="tool-pill">
+      <img src="assets/icons/html.svg" alt="HTML / JavaScript">
+      <span>HTML / JS</span>
+    </div>
+
+    <div class="tool-pill">
+      <img src="assets/icons/aws.svg" alt="AWS">
+      <span>AWS</span>
+    </div>
+
+    <div class="tool-pill">
+      <img src="assets/icons/sql-db.svg" alt="SQL">
+      <span>SQL</span>
+    </div>
+
+    <div class="tool-pill">
+      <img src="assets/icons/REST-API.svg" alt="REST API">
+      <span>REST API</span>
+    </div>
+
+    <div class="tool-pill">
+      <img src="assets/icons/oracle-ring.svg" alt="Oracle">
+      <span>Oracle</span>
+    </div>
+
+     <div class="tool-pill">
+      <img src="https://cdn.simpleicons.org/python/EE6C4D" alt="Python">
+      <span>Python</span>
+    </div>
+
+      <div class="tool-pill">
+      <img src="https://cdn.simpleicons.org/googlebigquery/EE6C4D" alt="BigQuery">
+      <span>BigQuery</span>
+    </div>
+
+     <div class="tool-pill">
+      <img src="https://cdn.simpleicons.org/looker/EE6C4D" alt="Looker Studio">
+      <span>Looker Studio</span>
+    </div>
+
+     <div class="tool-pill">
+      <img src="https://cdn.simpleicons.org/github/EE6C4D" alt="Github">
+      <span>Github</span>
+    </div>
+  </div>
+</section>
+
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+          </div>
+  
+
+        <!-- Projects table -->
+ <!-- Projects (Cards) -->
+<section class="card projects-card" style="margin-top:14px;" aria-label="Projects">
+  <div class="card-head">
+    <h3>Projects</h3>
+  </div>
+
+  <!-- Card grid -->
+  <div class="projects-grid" id="projectsBody">
+
+    <!-- Project 1 -->
+    <article class="project-card project-row"
+      data-tags="batch warehouse dashboards completed python bigquery sql looker"
+      data-href="projects/retail.html"
+      tabindex="0"
+      role="button"
+      aria-label="Open Retail Sales Analytics Pipeline project">
+
+      <header class="project-card__head">
+        <h4 class="project-card__title">Retail Sales Analytics Pipeline</h4>
+
+        <div class="project-card__status" aria-hidden="true">
+          <span class="status-dot ok"></span>
+          <span class="status-text">Complete</span>
+        </div>
+      </header>
+
+      <p class="project-card__desc">
+        This project is built on a public warehouse and retail alcohol sales data published by Montgomery County,
+        Maryland Alcohol Beverage Services (ABS). The dataset includes monthly, category-level sales and distribution records,
+        enabling full ETL development, BigQuery warehousing, and analytical KPI modeling.
+      </p>
+
+      <div class="project-card__meta">
+        <!-- Tools -->
+        <div class="project-card__block">
+          <div class="project-card__label">Tools Used</div>
+
+          <div class="tools-list">
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/python/EE6C4D" alt="Python logo">
+              Python
+            </div>
+
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/googlebigquery/EE6C4D" alt="BigQuery logo">
+              BigQuery
+            </div>
+
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/sql-db.svg" alt="SQL database">
+              SQL
+            </div>
+
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/looker/EE6C4D" alt="Looker Studio logo">
+              Looker Studio
+            </div>
+
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/github/EE6C4D" alt="GitHub logo">
+              GitHub
+            </div>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div class="project-card__block">
+          <div class="project-card__label">Links</div>
+
+          <div class="pill-stack">
+            <a class="pill" href="projects/retail.html" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">View
+            </a>
+
+            <a class="pill" href="https://github.com/ChelseaRhea222/retail-sales-batch-analytics/" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">GitHub
+            </a>
+
+            <a class="pill"
+              href="https://data.montgomerycountymd.gov/Community-Recreation/Warehouse-and-Retail-Sales/v76h-r7br/about_data"
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">Source
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Project 2 -->
+    <article class="project-card project-row"
+      data-tags="api batch warehouse dashboards completed python bigquery sql looker"
+      data-href="projects/electricity.html"
+      tabindex="0"
+      role="button"
+      aria-label="Open Energy Net Metering project">
+
+      <header class="project-card__head">
+        <h4 class="project-card__title">Energy Net Metering</h4>
+
+        <div class="project-card__status" aria-hidden="true">
+          <span class="status-dot ok"></span>
+          <span class="status-text">Complete</span>
+        </div>
+      </header>
+
+      <p class="project-card__desc">
+        This project builds an end-to-end ETL pipeline using public energy net metering data from the U.S. Energy Information
+        Administration (EIA). Data is extracted via API, transformed with Python, and loaded into BigQuery to support analytical
+        views and KPI reporting. The pipeline enables analysis of net metering adoption trends across U.S. states and territories
+        over time.
+      </p>
+
+      <div class="project-card__meta">
+        <div class="project-card__block">
+          <div class="project-card__label">Tools Used</div>
+
+          <div class="tools-list">
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/REST-API.svg" alt="REST API">
+              REST API
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/python/EE6C4D" alt="Python logo">
+              Python
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/googlebigquery/EE6C4D" alt="BigQuery logo">
+              BigQuery
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/sql-db.svg" alt="SQL database">
+              SQL
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/looker/EE6C4D" alt="Looker Studio logo">
+              Looker Studio
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/github/EE6C4D" alt="GitHub logo">
+              GitHub
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card__block">
+          <div class="project-card__label">Links</div>
+
+          <div class="pill-stack">
+            <a class="pill" href="projects/electricity.html" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">View
+            </a>
+
+            <a class="pill" href="https://github.com/ChelseaRhea222/energy-eia-bigquery-etl" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">GitHub
+            </a>
+
+            <a class="pill"
+              href="https://www.eia.gov/opendata/index.php#bulk-downloads"
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">Source
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Project 3 -->
+    <article class="project-card project-row"
+      data-tags="inprogress dashboards streaming"
+      data-href="projects/llm.html"
+      tabindex="0"
+      role="button"
+      aria-label="Open Car Review LLM project">
+
+      <header class="project-card__head">
+        <h4 class="project-card__title">Car Review LLM</h4>
+
+        <div class="project-card__status" aria-hidden="true">
+          <span class="status-dot ok"></span>
+          <span class="status-text">Complete</span>
+        </div>
+      </header>
+
+      <p class="project-card__desc">
+        This project processes customer review data from an unstructured CSV files, automatically cleans and organizes the information,
+        and uses AI large language model to generate short summaries and sentiment insights. It demonstrates how raw, unstructured text can be
+        transformed into clear, meaningful takeaways that help support better decision-making.
+      </p>
+
+      <div class="project-card__meta">
+        <div class="project-card__block">
+          <div class="project-card__label">Tools Used</div>
+
+          <div class="tools-list">
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/python/EE6C4D" alt="Python logo">
+              Python
+            </div>
+
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/hugging.svg" alt="Hugging Face">
+              Transformers
+            </div>
+
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/github/EE6C4D" alt="GitHub logo">
+              GitHub
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card__block">
+          <div class="project-card__label">Links</div>
+
+          <div class="pill-stack">
+            <a class="pill" href="projects/llm.html" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">View
+            </a>
+
+            <a class="pill" href="https://github.com/ChelseaRhea222/car-review-llm" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Project 4 -->
+    <article class="project-card project-row"
+      data-tags="inprogress dashboards streaming"
+      data-href="projects/reservation.html"
+      tabindex="0"
+      role="button"
+      aria-label="Open Reservation App project">
+
+      <header class="project-card__head">
+        <h4 class="project-card__title">Reservation App</h4>
+
+        <div class="project-card__status" aria-hidden="true">
+          <span class="status-dot ok"></span>
+          <span class="status-text">Complete</span>
+        </div>
+      </header>
+
+      <p class="project-card__desc">
+        This project is a real-time restaurant reservation application backed by an Oracle relational database. The front end
+        communicates with a REST API to manage seat availability, enforce capacity rules, and prevent double bookings. Reservation
+        state is persisted in Oracle tables and reflected immediately on an interactive seat map.
+      </p>
+
+      <div class="project-card__meta">
+        <div class="project-card__block">
+          <div class="project-card__label">Tools Used</div>
+
+          <div class="tools-list">
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/html.svg" alt="JavaScript">
+              JavaScript
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/oracle-ring.svg" alt="Oracle">
+              Oracle
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/sql-db.svg" alt="SQL database">
+              SQL
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/REST-API.svg" alt="REST API">
+              REST API
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/github/EE6C4D" alt="GitHub logo">
+              GitHub
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card__block">
+          <div class="project-card__label">Links</div>
+
+          <div class="pill-stack">
+            <a class="pill" href="projects/reservation.html" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">View
+            </a>
+
+            <a class="pill" href="https://github.com/ChelseaRhea222/reservation-app" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Project 5 -->
+    <article class="project-card project-row"
+      data-tags="inprogress dashboards streaming"
+      data-href="projects/smarthealth.html"
+      tabindex="0"
+      role="button"
+      aria-label="Open EHR App project">
+
+      <header class="project-card__head">
+        <h4 class="project-card__title">EHR App</h4>
+
+        <div class="project-card__status" aria-hidden="true">
+          <span class="status-dot warn"></span>
+          <span class="status-text">In Progress</span>
+        </div>
+      </header>
+
+      <p class="project-card__desc">
+        This project is a full-stack EHR web application that simulates secure patient data management.
+        Built with HTML and JavaScript on the front end, an AWS-hosted relational database on the backend, and a REST API for
+        data access. Focused on data modeling, API integration, and scalable system design to mirror real-world healthcare
+        information systems.
+      </p>
+
+      <div class="project-card__meta">
+        <div class="project-card__block">
+          <div class="project-card__label">Tools Used</div>
+
+          <div class="tools-list">
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/html.svg" alt="JavaScript">
+              JavaScript
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/aws.svg" alt="AWS">
+              AWS
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/sql-db.svg" alt="SQL database">
+              SQL
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/REST-API.svg" alt="REST API">
+              REST API
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/github/EE6C4D" alt="GitHub logo">
+              GitHub
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card__block">
+          <div class="project-card__label">Links</div>
+
+          <div class="pill-stack">
+            <a class="pill" href="projects/smarthealth.html" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">View
+            </a>
+
+            <a class="pill" href="https://github.com/" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Project 6 -->
+    <article class="project-card project-row"
+      data-tags="etl databricks delta sql powerbi healthcare"
+      data-href="projects/healthcare.html"
+      tabindex="0"
+      role="button"
+      aria-label="Open Healthcare Lakehouse project">
+
+      <header class="project-card__head">
+        <h4 class="project-card__title">Healthcare Lakehouse</h4>
+
+        <div class="project-card__status" aria-hidden="true">
+          <span class="status-dot ok"></span>
+          <span class="status-text">Complete</span>
+        </div>
+      </header>
+
+      <p class="project-card__desc">
+        This project ingests generated healthcare CSV datasets into Databricks Volumes, loads them into Delta tables,
+        models BI-ready SQL views, and validates KPIs before embedding results in a Power BI dashboard.
+      </p>
+
+      <div class="project-card__meta">
+        <div class="project-card__block">
+          <div class="project-card__label">Tools Used</div>
+
+          <div class="tools-list">
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/python/EE6C4D" alt="Python logo">
+              Python
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/databricks.svg" alt="Databricks">
+              Databricks
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/sql-db.svg" alt="SQL database">
+              SQL
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="assets/icons/powerbi.svg" alt="Power BI">
+              Power BI
+            </div>
+            <div class="tool-row">
+              <img class="tool-icon" src="https://cdn.simpleicons.org/github/EE6C4D" alt="GitHub logo">
+              GitHub
+            </div>
+          </div>
+        </div>
+
+        <div class="project-card__block">
+          <div class="project-card__label">Links</div>
+
+          <div class="pill-stack">
+            <a class="pill" href="projects/healthcare.html" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">View
+            </a>
+
+            <a class="pill" href="https://github.com/" onclick="event.stopPropagation();">
+              <img src="assets/icons/open.svg" alt="">GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+        <!-- Simple anchors for now -->
+     <section id="resume" style="margin-top:22px;">
+  <div class="card">
+
+    <div class="card-head">
+      <h3>Resume</h3>
+
+      <div class="legend">
+        <a class="pill alt" href="Website-Resume.pdf" download>Download</a>
+      </div>
+    </div>
+
+    <!-- Embedded preview -->
+    <div class="resume-embed">
+     <iframe src="Website-Resume.pdf#view=FitH" loading="lazy"></iframe>
+    </div>
+
+  </div>
+</section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const yearEl = document.getElementById("year");
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
