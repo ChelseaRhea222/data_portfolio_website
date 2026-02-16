@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LLM Car Review Summaries | Chelsea Rhea</title>
+  <meta name="description" content="Case study: clean messy CSV reviews and generate one-sentence summaries with a lightweight language model, producing a new, analysis-ready CSV." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    /* (Copied/kept from your existing project template for consistent styling) */
+    .hero {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .hero h1{
+      margin:0;
+      font-size:26px;
+      letter-spacing:-.02em;
+    }
+
+    .cta-row{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: var(--surface);
+      font-weight:700;
+      font-size:12px;
+      color:var(--ink);
+      cursor:pointer;
+    }
+    .btn.primary{
+      background: color-mix(in oklab,var(--primary) 12%, white);
+      border-color: color-mix(in oklab,var(--primary) 28%, var(--border));
+    }
+    .btn:hover{
+      background: color-mix(in oklab,var(--highlight) 16%, white);
+      border-color: color-mix(in oklab,var(--accent) 25%, var(--border));
+    }
+
+    .pipeline-steps{
+      /* ✅ Always 1 row: step, arrow, step, arrow... */
+      display:grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+      align-items:center;
+      gap: clamp(6px, 1.2vw, 14px);
+      margin-top:12px;
+      width:100%;
+    }
+    .pipe-step{
+      display:flex;
+      align-items:center;
+      gap: clamp(6px, 1vw, 12px);
+
+      padding: clamp(8px, 1.2vw, 16px) clamp(10px, 1.8vw, 20px);
+      border-radius:18px;
+      background: var(--surface);
+      border:1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+
+      min-width: 0;   /* allow shrinking in grid */
+    }
+    .pipe-step img{
+      width: clamp(14px, 2vw, 28px);
+      height: clamp(14px, 2vw, 28px);
+      flex: 0 0 auto;
+    }
+    .pipe-step strong{
+      display:block;
+      font-size: clamp(11px, 1.3vw, 15px);
+      font-weight:900;
+      color:var(--ink);
+      line-height:1.1;
+    }
+    .pipe-step span{
+      font-size: clamp(9px, 1.1vw, 13px);
+      color:var(--muted);
+      font-weight:600;
+
+      /* ✅ prevent weird wrapping; truncate nicely */
+      display:block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .pipe-step > div{
+      min-width:0; /* allows ellipsis to work */
+    }
+
+    .pipe-arrow{
+      font-size: clamp(16px, 2.5vw, 40px);
+      font-weight: 900;
+      color: var(--accent);
+      margin: 0 4px;
+      line-height: 1;
+    }
+
+    .pipeline-wrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .stepper{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .step{
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      padding:8px 10px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .step.active{
+      background: color-mix(in oklab,var(--primary) 16%, white);
+      border-color: color-mix(in oklab,var(--primary) 30%, var(--border));
+    }
+
+    pre.code{
+      margin:10px 0 0;
+      padding:12px;
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 35%, white), white);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:auto;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--ink);
+      max-height: 420px;
+    }
+    .note{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-weight:650;
+    }
+    .before-shot {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      margin-top: 10px;
+    }
+
+    @media (max-width: 900px){
+      .pipeline-wrap{ grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px){
+      .cta-row{ gap:6px; }
+      .btn{ font-size:9px; padding:3px 6px; border-radius:8px; }
+      .pipeline-steps{
+        grid-template-columns: 1fr;
+        row-gap:8px;
+      }
+      .pipe-arrow{
+        transform: rotate(90deg);
+        font-size: 18px;
+        justify-self: start;
+      }
+      .pipe-step{
+        padding:6px 8px;
+        gap:6px;
+      }
+      .pipe-step img{
+        width:12px;
+        height:12px;
+      }
+      .pipe-step strong{ font-size:9px; }
+      .pipe-step span{ font-size:8px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="brand">
+  <div class="logo">
+    <img src="../assets/profile.png" alt="Chelsea Rhea">
+  </div>
+
+        <div class="brand-text">
+          Chelsea Rhea
+          <small>Data Portfolio</small>
+        </div>
+      </div>
+
+    <nav class="menu">
+      <a class="item" href="../index.html">Home</a>
+      <a class="item active" href="../index.html#projects">Projects</a>
+      <a class="item" href="../index.html#resume">Resume</a>
+      <div class="divider"></div>
+      <a class="item" href="https://github.com/" target="_blank">GitHub</a>
+      <a class="item" href="https://www.linkedin.com/" target="_blank">LinkedIn</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      © <span id="year"></span> Chelsea Rhea
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <main class="content">
+
+      <!-- Hero -->
+      <section class="card">
+        <div class="hero">
+
+          <div>
+            <h1>LLM Car Review Summaries</h1>
+
+            <div class="pipeline-steps">
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/files/EE6C4D" alt="CSV">
+                <div><strong>Source</strong><span>CSV</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/python/EE6C4D" alt="Python">
+                <div><strong>ETL</strong><span>Python</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/huggingface/EE6C4D" alt="LLM">
+                <div><strong>LLM Step</strong><span>Transformers</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/files/EE6C4D" alt="Output CSV">
+                <div><strong>Output</strong><span>Summaries</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <a class="btn primary" href="../projects.html">← Back</a>
+            <a class="btn" href="https://github.com/ChelseaRhea222/car-review-llm" target="_blank">GitHub</a>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Pipeline Explorer -->
+      <section class="pipeline-wrap" aria-label="Pipeline explorer">
+        <article class="card" aria-label="Pipeline steps">
+          <div class="card-head">
+            <h3>Pipeline Explorer</h3>
+            <div class="legend">
+              <span class="pill">Click a step</span>
+            </div>
+          </div>
+
+          <div class="stepper" role="tablist" aria-label="Pipeline steps">
+            <div class="step active" role="tab" tabindex="0" data-step="read">Read</div>
+            <div class="step" role="tab" tabindex="0" data-step="parse">Parse</div>
+            <div class="step" role="tab" tabindex="0" data-step="summarize">Summarize</div>
+            <div class="step" role="tab" tabindex="0" data-step="save">Save</div>
+          </div>
+
+          <p id="stepTitle" class="note" style="font-weight:900; color:var(--ink); margin-top:12px;">
+            Read: handle weird encodings safely
+          </p>
+
+
+          <pre class="code" id="stepCode"><code># ====== 1) READ RAW BYTES + DECODE SAFELY ======
+raw = open(INPUT_PATH, &quot;rb&quot;).read()
+print(&quot;First 80 bytes:&quot;, raw[:80])
+
+text = None
+enc_used = None
+
+for enc in (&quot;utf-8-sig&quot;, &quot;utf-16&quot;, &quot;utf-16le&quot;, &quot;utf-16be&quot;, &quot;cp1252&quot;, &quot;latin1&quot;):
+    try:
+        candidate = raw.decode(enc)
+        if re.sub(r&quot;\s+&quot;, &quot;&quot;, candidate):
+            text = candidate
+            enc_used = enc
+            break
+    except Exception:
+        continue
+
+if text is None:
+    raise ValueError(
+        &quot;Could not decode car_reviews.csv into readable text. &quot;
+        &quot;Try re-saving as &#x27;CSV UTF-8 (Comma delimited)&#x27; from Excel.&quot;
+    )
+
+print(&quot;Decoded with:&quot;, enc_used)
+
+lines = [ln.strip() for ln in text.splitlines() if ln.strip()]</code></pre>
+        </article>
+
+   
+      </section>
+
+      <!-- Before Screenshot -->
+      <section class="card" style="margin-top:14px;" aria-label="Before screenshot">
+        <div class="card-head">
+          <h3>Before</h3>
+        </div>
+        <img class="before-shot" src="../assets/llm_before.PNG" alt="Before screenshot for LLM car review project">
+      </section>
+
+      <!-- Summary Screenshot -->
+      <section class="card" style="margin-top:14px;" aria-label="Summary screenshot">
+        <div class="card-head">
+          <h3>Summary</h3>
+        </div>
+        <img class="before-shot" src="../assets/llm_summary.PNG" alt="Summary screenshot for LLM car review project">
+      </section>
+</main>
+  </div>
+</div>
+
+<script>
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  const steps = {
+    read: {
+      title: "Read: handle weird encodings safely",
+      desc: "Reads raw bytes and tries common encodings (utf-8-sig, utf-16, cp1252, etc.) so the pipeline doesn’t break on export differences.",
+      code: `# ====== 1) READ RAW BYTES + DECODE ======
+raw = open(INPUT_PATH, "rb").read()
+print("First 80 bytes:", raw[:80])
+
+text = None
+enc_used = None
+
+for enc in ("utf-8-sig", "utf-16", "utf-16le", "utf-16be", "cp1252", "latin1"):
+    try:
+        candidate = raw.decode(enc)
+        if re.sub(r"\s+", "", candidate):
+            text = candidate
+            enc_used = enc
+            break
+    except Exception:
+        continue
+
+if text is None:
+    raise ValueError(
+        "Could not decode car_reviews.csv into readable text. "
+        "Try re-saving as 'CSV UTF-8 (Comma delimited)' from Excel."
+    )
+
+print("Decoded with:", enc_used)
+
+lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+if not lines:
+    raise ValueError("After decoding, the file still appears empty.")
+
+first = lines[0].lower()
+if ("review" in first and "class" in first) or first.startswith("review") or first.startswith('"review"'):
+    lines = lines[1:]`
+    },
+    parse: {
+      title: "Parse: split review + label reliably",
+      desc: "Uses a last-delimiter split so reviews can contain punctuation without corrupting the Class column.",
+      code: `# ====== 2) PARSE INTO Review + Class ======
+rows = []
+for line in lines:
+    # Prefer semicolon format: review ; label
+    review, sep, label = line.rpartition(";")
+
+    # If no semicolon, try comma format: review , label
+    if sep == "":
+        review, sep, label = line.rpartition(",")
+
+    if sep == "":
+        continue
+
+    review = review.strip().strip('"')
+    label = label.strip().strip('"').upper()
+
+    if label in {"POSITIVE", "NEGATIVE"} and review:
+        rows.append({"Review": review, "Class": label})
+
+df = pd.DataFrame(rows)
+
+print("Rows parsed:", len(df))
+print("Columns:", df.columns.tolist())
+print(df.head())
+
+if df.empty:
+    raise ValueError(
+        "Parsed 0 rows. Expected format per line:\n"
+        "  <review text><delimiter><POSITIVE/NEGATIVE>"
+    )`
+    },
+    summarize: {
+      title: "Summarize: generate one sentence per review",
+      desc: "Builds a short prompt and generates a compact summary (then trims to one sentence).",
+      code: `# ====== 3) SUMMARIZE REVIEWS ======
+# Prefer a true summarization model; if unavailable, use an extractive fallback.
+summarizer = None
+try:
+    summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    print("Summarizer: sshleifer/distilbart-cnn-12-6")
+except Exception as e:
+    print("Summarization model unavailable, using extractive fallback.")
+    print("Reason:", str(e))
+
+STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "been", "but", "by", "for",
+    "from", "had", "has", "have", "he", "her", "him", "his", "i", "if", "in",
+    "is", "it", "its", "me", "my", "of", "on", "or", "our", "she", "so",
+    "that", "the", "their", "them", "there", "they", "this", "to", "was",
+    "we", "were", "with", "you", "your"
+}
+
+def split_sentences(text: str):
+    parts = re.split(r"(?<=[.!?])\s+", text.strip())
+    return [p.strip() for p in parts if p and re.search(r"[A-Za-z0-9]", p)]
+
+def tokenize(text: str):
+    return [w for w in re.findall(r"[A-Za-z']+", text.lower()) if w not in STOPWORDS]
+
+def normalize_sentence(s: str) -> str:
+    s = re.sub(r"\s+", " ", s).strip()
+    if s and s[-1] not in ".!?":
+        s += "."
+    return s
+
+def extractive_summary(review_text: str) -> str:
+    sentences = split_sentences(review_text)
+    if not sentences:
+        return "Summary unavailable."
+    if len(sentences) == 1:
+        return normalize_sentence(sentences[0])
+
+    doc_tokens = tokenize(review_text)
+    freqs = Counter(doc_tokens)
+
+    best_score = float("-inf")
+    best_sentence = sentences[0]
+
+    for idx, sent in enumerate(sentences):
+        tokens = tokenize(sent)
+        if not tokens:
+            continue
+
+        keyword_score = sum(freqs[t] for t in tokens) / max(len(tokens), 1)
+        length = len(sent.split())
+        # Favor moderately detailed sentences over very short/generic ones.
+        length_bonus = 0.0
+        if 10 <= length <= 28:
+            length_bonus = 1.5
+        elif 7 <= length < 10 or 29 <= length <= 35:
+            length_bonus = 0.7
+        elif length < 5:
+            length_bonus = -1.5
+
+        # Small penalty for first sentence to reduce "just copy first line".
+        position_penalty = -0.35 if idx == 0 else 0.0
+        score = keyword_score + length_bonus + position_penalty
+
+        if score > best_score:
+            best_score = score
+            best_sentence = sent
+
+    return normalize_sentence(best_sentence)
+
+def summarize_one(review_text: str) -> str:
+    review_text = re.sub(r"\s+", " ", str(review_text)).strip()
+    if not review_text:
+        return "Summary unavailable."
+
+    if summarizer is not None:
+        try:
+            out = summarizer(
+                review_text,
+                max_length=48,
+                min_length=16,
+                do_sample=False,
+                truncation=True
+            )[0]["summary_text"]
+            out = normalize_sentence(out)
+            # Guardrail for obvious low-quality generations.
+            if len(out.split()) >= 5 and "i am a very good car" not in out.lower():
+                return out
+        except Exception:
+            pass
+
+    return extractive_summary(review_text)
+
+df["Summary"] = [summarize_one(r) for r in df["Review"].tolist()]
+`
+    },
+    save: {
+      title: "Save: write a clean output CSV",
+      desc: "Writes the cleaned data + Summary column to a UTF-8 CSV that opens cleanly in Excel/Sheets.",
+      code: `# ====== 4) SAVE OUTPUT FILE YOU CAN UPLOAD ======
+df.to_csv(OUTPUT_PATH, index=False, encoding="utf-8-sig")
+print("Saved summarized output file:", OUTPUT_PATH)`
+    }
+  };
+
+  const titleEl = document.getElementById("stepTitle");
+  const descEl = document.getElementById("stepDesc");
+  const codeEl = document.getElementById("stepCode");
+  const stepEls = Array.from(document.querySelectorAll(".step"));
+
+  function setStep(key){
+    stepEls.forEach(s => s.classList.toggle("active", s.dataset.step === key));
+    const s = steps[key];
+    if (!s) return;
+
+    titleEl.textContent = s.title;
+    descEl.textContent = s.desc;
+
+    const innerCode = codeEl.querySelector("code") || codeEl;
+    innerCode.textContent = s.code;
+  }
+
+  stepEls.forEach(el => {
+    el.addEventListener("click", () => setStep(el.dataset.step));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") setStep(el.dataset.step);
+    });
+  });
+</script>
+
+</body>
+</html>
+

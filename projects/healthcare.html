@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Healthcare Lakehouse (Databricks → Power BI) | Chelsea Rhea</title>
+  <meta name="description" content="Case study: CSV ingestion into Databricks Volumes, Delta tables, modeled views, and Power BI reporting." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    /* ---------- Hero layout ---------- */
+    .hero {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .hero h1{
+      margin:0;
+      font-size:26px;
+      letter-spacing:-.02em;
+    }
+
+    /* ---------- CTA buttons (smaller) ---------- */
+    .cta-row{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: var(--surface);
+      font-weight:700;
+      font-size:12px;
+      color:var(--ink);
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .btn.primary{
+      background: color-mix(in oklab,var(--primary) 12%, white);
+      border-color: color-mix(in oklab,var(--primary) 28%, var(--border));
+    }
+    .btn:hover{
+      background: color-mix(in oklab,var(--highlight) 16%, white);
+      border-color: color-mix(in oklab,var(--accent) 25%, var(--border));
+    }
+
+    /* ---------- KPI row (optional) ---------- */
+    .kpi-mini{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:6px;
+      margin-top:8px;
+      min-width:150px;
+    }
+    .kpi-mini .kpi{
+      box-shadow: var(--shadow-soft);
+      padding:6px 10px;
+      transform: scale(0.9);
+      min-width:150px;
+    }
+    .kpi-title{ font-size:11px; }
+    .kpi-value{ font-size:18px; }
+    .kpi-trend{ font-size:11px; }
+
+    /* ---------- Pipeline steps (always one row; responsive scale) ---------- */
+    .pipeline-steps{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; /* cards + arrows */
+      align-items:center;
+      column-gap: clamp(6px, 1.2vw, 14px);
+      row-gap: 0;
+      margin-top:12px;
+      width:100%;
+    }
+
+    .pipe-step{
+      display:flex;
+      align-items:center;
+      gap: clamp(6px, 1vw, 12px);
+      padding: clamp(8px, 1.2vw, 16px) clamp(10px, 1.8vw, 18px);
+      border-radius: 18px;
+      background: var(--surface);
+      border:1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      min-width:0;
+      width:100%;
+    }
+
+    .pipe-step img{
+      width: clamp(16px, 2vw, 28px);
+      height: clamp(16px, 2vw, 28px);
+      flex: 0 0 auto;
+    }
+
+    .pipe-step strong{
+      display:block;
+      font-size: clamp(11px, 1.25vw, 15px);
+      font-weight:900;
+      color:var(--ink);
+      line-height:1.1;
+      white-space:nowrap;
+    }
+
+    .pipe-step span{
+      font-size: clamp(9px, 1.05vw, 13px);
+      color:var(--muted);
+      font-weight:600;
+      line-height:1.15;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      display:block;
+      max-width: 100%;
+    }
+
+    .pipe-arrow{
+      justify-self:center;
+      font-size: clamp(16px, 2.2vw, 38px);
+      font-weight: 900;
+      color: var(--accent);
+      line-height:1;
+      margin:0;
+      transform:none;
+    }
+
+    /* ---------- Pipeline explorer ---------- */
+    .pipeline-wrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .pipeline-wrap > .card{
+      max-height: 620px;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+    .stepper{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .step{
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      padding:8px 10px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .step.active{
+      background: color-mix(in oklab,var(--primary) 16%, white);
+      border-color: color-mix(in oklab,var(--primary) 30%, var(--border));
+    }
+
+    pre.code{
+      margin:10px 0 0;
+      padding:12px;
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 35%, white), white);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:auto;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--ink);
+    }
+    .note{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-weight:650;
+    }
+
+    /* ---------- Screenshot/preview blocks ---------- */
+    .source-preview{
+      margin-top: 10px;
+    }
+    .source-preview img{
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* ---------- Embed (Power BI) ---------- */
+    .embed{
+      width: 100%;
+      height: 75vh;
+      min-height: 700px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .embed iframe{
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display:block;
+    }
+
+    /* ---------- Small helper chips ---------- */
+    .chip-row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      padding:8px 10px;
+      border-radius:999px;
+      font-weight:850;
+      font-size:12px;
+      color:var(--ink);
+    }
+    .chip img{
+      width:16px;height:16px;display:block;
+    }
+@media (max-width: 900px){
+      .kpi-mini{ grid-template-columns: repeat(2,1fr); }
+    }
+
+    @media (max-width: 600px){
+      .btn{ font-size:9px; padding:3px 6px; border-radius:8px; }
+      .pipeline-steps{
+        grid-template-columns: 1fr;
+        row-gap:8px;
+      }
+      .pipe-arrow{
+        transform: rotate(90deg);
+        font-size: 18px;
+        justify-self: start;
+      }
+      .pipe-step{
+        padding:6px 8px;
+        gap:6px;
+      }
+      .pipe-step img{
+        width:12px;
+        height:12px;
+      }
+      .pipe-step strong{ font-size:9px; }
+      .pipe-step span{ font-size:8px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">
+        <img src="../assets/profile.png" alt="Chelsea Rhea">
+      </div>
+
+      <div class="brand-text">
+        Chelsea Rhea
+        <small>Data Portfolio</small>
+      </div>
+    </div>
+
+    <nav class="menu">
+      <a class="item" href="../index.html">Home</a>
+      <a class="item active" href="../index.html#projects">Projects</a>
+      <a class="item" href="../index.html#resume">Resume</a>
+      <div class="divider"></div>
+      <a class="item" href="https://github.com/" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a class="item" href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      © <span id="year"></span> Chelsea Rhea
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <main class="content">
+
+      <!-- Hero -->
+      <section class="card">
+        <div class="hero">
+          <div>
+            <h1>Healthcare Lakehouse: Databricks → Power BI</h1>
+            <p style="margin:8px 0 0;color:var(--muted);font-weight:650;max-width:70ch;">
+              Ingested multiple healthcare CSV datasets into a Databricks Volume, converted them into Delta tables,
+              modeled a BI-ready layer with SQL views, and validated results with queries for KPIs and trends.
+            </p>
+
+            <!-- Pipeline summary row -->
+            <div class="pipeline-steps" aria-label="Pipeline steps">
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/python/EE6C4D" alt="Source">
+                <div><strong>Generate</strong><span>Python</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/files/EE6C4D" alt="Databricks">
+                <div><strong>Source</strong><span>CSV</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="../assets/icons/databricks.svg" alt="Spark">
+                <div><strong>Databricks</strong><span>Volumes + Delta</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="../assets/icons/powerbi.svg" alt="Power BI">
+                <div><strong>BI Layer</strong><span>Power BI</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <a class="btn primary" href="../projects.html">← Back</a>
+            <a class="btn" href="#dashboard">Dashboard</a>
+          </div>
+        </div>
+      </section>
+<!-- Pipeline Explorer -->
+      <section class="pipeline-wrap" aria-label="Pipeline explorer">
+        <article class="card" aria-label="Pipeline steps">
+          <div class="card-head">
+            <h3>Pipeline Explorer</h3>
+            <div class="legend">
+              <span class="pill">Click a step</span>
+            </div>
+          </div>
+
+          <div class="stepper" role="tablist" aria-label="Pipeline steps">
+            <div class="step active" role="tab" tabindex="0" data-step="generate">Generate</div>
+            <div class="step" role="tab" tabindex="0" data-step="ingest">Ingest</div>
+            <div class="step" role="tab" tabindex="0" data-step="model">Model</div>
+            <div class="step" role="tab" tabindex="0" data-step="validate">Validate</div>
+          </div>
+
+          <p id="stepTitle" class="note" style="font-weight:900; color:var(--ink); margin-top:12px;">
+           THE DATA FROM THIS PROJECT WAS GENERATED USING PYTHON TO NOT USE REAL CUSTOMER DATA
+          </p>
+
+          <pre class="code" id="stepCode"><code>import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import random
+
+# -------------------------
+# SETTINGS 
+# -------------------------
+N_ENCOUNTERS = 100_000
+N_APPOINTMENTS = 80_000
+N_CLAIMS = 100_000
+
+OUTPUT_FOLDER = "./"   # change if you want
+
+np.random.seed(42)
+random.seed(42)
+
+
+# -------------------------
+# Helpers
+# -------------------------
+def random_dates(n, start="2023-01-01", end="2025-12-31"):
+    start_date = datetime.strptime(start, "%Y-%m-%d")
+    end_date = datetime.strptime(end, "%Y-%m-%d")
+    delta = (end_date - start_date).days
+    return [start_date + timedelta(days=random.randint(0, delta)) for _ in range(n)]
+
+
+facilities = ["North Hospital", "South Clinic", "West Medical", "Downtown Health"]
+departments = ["ED", "Primary Care", "Cardiology", "Radiology", "Ortho"]
+providers = [f"Dr {i}" for i in range(1, 41)]
+payers = ["Medicare", "Medicaid", "Aetna", "BlueCross", "United", "Self-Pay"]
+
+
+# =====================================================
+# 1. ENCOUNTERS (visits)
+# =====================================================
+dates = random_dates(N_ENCOUNTERS)
+
+wait_times = np.random.gamma(2, 15, N_ENCOUNTERS).astype(int)  # realistic skew
+los = np.random.gamma(1.8, 2.2, N_ENCOUNTERS).round(1)
+
+readmit = np.random.choice([0, 1], N_ENCOUNTERS, p=[0.9, 0.1])
+
+encounters = pd.DataFrame({
+    "EncounterID": range(1, N_ENCOUNTERS + 1),
+    "Date": dates,
+    "Facility": np.random.choice(facilities, N_ENCOUNTERS),
+    "Department": np.random.choice(departments, N_ENCOUNTERS),
+    "Provider": np.random.choice(providers, N_ENCOUNTERS),
+    "PatientID": np.random.randint(10000, 99999, N_ENCOUNTERS),
+    "WaitTimeMinutes": wait_times,
+    "LengthOfStayDays": los,
+    "Readmitted": readmit
+})
+
+encounters.to_csv(OUTPUT_FOLDER + "encounters.csv", index=False)
+
+
+# =====================================================
+# 2. APPOINTMENTS
+# =====================================================
+status_probs = [0.75, 0.15, 0.10]
+status_vals = ["Completed", "No-Show", "Cancelled"]
+
+appointments = pd.DataFrame({
+    "AppointmentID": range(1, N_APPOINTMENTS + 1),
+    "Date": random_dates(N_APPOINTMENTS),
+    "Facility": np.random.choice(facilities, N_APPOINTMENTS),
+    "Provider": np.random.choice(providers, N_APPOINTMENTS),
+    "Status": np.random.choice(status_vals, N_APPOINTMENTS, p=status_probs)
+})
+
+appointments.to_csv(OUTPUT_FOLDER + "appointments.csv", index=False)
+
+
+# =====================================================
+# 3. CLAIMS (billing)
+# =====================================================
+billed = np.random.uniform(200, 5000, N_CLAIMS).round(2)
+
+denied = np.random.choice([0, 1], N_CLAIMS, p=[0.85, 0.15])
+paid = np.where(denied == 1, 0, billed * np.random.uniform(0.6, 1.0, N_CLAIMS))
+
+claims = pd.DataFrame({
+    "ClaimID": range(1, N_CLAIMS + 1),
+    "Date": random_dates(N_CLAIMS),
+    "Payer": np.random.choice(payers, N_CLAIMS),
+    "BilledAmount": billed,
+    "PaidAmount": paid.round(2),
+    "Denied": denied
+})
+
+claims.to_csv(OUTPUT_FOLDER + "claims.csv", index=False)
+
+
+# =====================================================
+# 4. DATE DIMENSION
+# =====================================================
+start_date = datetime(2023, 1, 1)
+end_date = datetime(2025, 12, 31)
+
+dates = pd.date_range(start_date, end_date)
+
+date_dim = pd.DataFrame({
+    "Date": dates,
+    "Year": dates.year,
+    "Month": dates.month,
+    "MonthName": dates.strftime("%b"),
+    "Quarter": dates.quarter,
+    "YearMonth": dates.strftime("%Y-%m")
+})
+
+date_dim.to_csv(OUTPUT_FOLDER + "date_dim.csv", index=False)
+
+
+print("✅ Files created:")
+print(" - encounters.csv")
+print(" - appointments.csv")
+print(" - claims.csv")
+print(" - date_dim.csv")</code></pre>
+        </article>
+      </section>
+
+      <!-- Databricks Load -->
+      <section class="card" style="margin-top:14px;" aria-label="Databricks load screenshot">
+        <div class="card-head">
+          <h3>Databricks Load</h3>
+        </div>
+        <div class="source-preview">
+          <img src="../assets/databricks_load.PNG" alt="Databricks data load screenshot">
+        </div>
+      </section>
+
+
+
+      <!-- Dashboard PDF -->
+      <section class="card" id="dashboard" style="margin-top:14px;" aria-label="Power BI embed">
+        <div class="card-head">
+          <h3>Dashboard (PDF)</h3>
+    
+        </div>
+
+        <div class="embed">
+          <iframe
+            title="Healthcare Power BI PDF"
+            src="../assets/Healthcare_powerbi.pdf#view=FitH"
+            allowfullscreen="true">
+          </iframe>
+        </div>
+
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // Year in sidebar/footer
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // Pipeline Explorer content
+  const steps = {
+    generate: {
+      title: 'THE DATA FROM THIS PROJECT WAS GENERATED USING PYTHON TO NOT USE REAL CUSTOMER DATA',
+      code: `import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import random
+
+# -------------------------
+# SETTINGS 
+# -------------------------
+N_ENCOUNTERS = 100_000
+N_APPOINTMENTS = 80_000
+N_CLAIMS = 100_000
+
+OUTPUT_FOLDER = "./"   # change if you want
+
+np.random.seed(42)
+random.seed(42)
+
+
+# -------------------------
+# Helpers
+# -------------------------
+def random_dates(n, start="2023-01-01", end="2025-12-31"):
+    start_date = datetime.strptime(start, "%Y-%m-%d")
+    end_date = datetime.strptime(end, "%Y-%m-%d")
+    delta = (end_date - start_date).days
+    return [start_date + timedelta(days=random.randint(0, delta)) for _ in range(n)]
+
+
+facilities = ["North Hospital", "South Clinic", "West Medical", "Downtown Health"]
+departments = ["ED", "Primary Care", "Cardiology", "Radiology", "Ortho"]
+providers = [f"Dr {i}" for i in range(1, 41)]
+payers = ["Medicare", "Medicaid", "Aetna", "BlueCross", "United", "Self-Pay"]
+
+
+# =====================================================
+# 1. ENCOUNTERS (visits)
+# =====================================================
+dates = random_dates(N_ENCOUNTERS)
+
+wait_times = np.random.gamma(2, 15, N_ENCOUNTERS).astype(int)  # realistic skew
+los = np.random.gamma(1.8, 2.2, N_ENCOUNTERS).round(1)
+
+readmit = np.random.choice([0, 1], N_ENCOUNTERS, p=[0.9, 0.1])
+
+encounters = pd.DataFrame({
+    "EncounterID": range(1, N_ENCOUNTERS + 1),
+    "Date": dates,
+    "Facility": np.random.choice(facilities, N_ENCOUNTERS),
+    "Department": np.random.choice(departments, N_ENCOUNTERS),
+    "Provider": np.random.choice(providers, N_ENCOUNTERS),
+    "PatientID": np.random.randint(10000, 99999, N_ENCOUNTERS),
+    "WaitTimeMinutes": wait_times,
+    "LengthOfStayDays": los,
+    "Readmitted": readmit
+})
+
+encounters.to_csv(OUTPUT_FOLDER + "encounters.csv", index=False)
+
+
+# =====================================================
+# 2. APPOINTMENTS
+# =====================================================
+status_probs = [0.75, 0.15, 0.10]
+status_vals = ["Completed", "No-Show", "Cancelled"]
+
+appointments = pd.DataFrame({
+    "AppointmentID": range(1, N_APPOINTMENTS + 1),
+    "Date": random_dates(N_APPOINTMENTS),
+    "Facility": np.random.choice(facilities, N_APPOINTMENTS),
+    "Provider": np.random.choice(providers, N_APPOINTMENTS),
+    "Status": np.random.choice(status_vals, N_APPOINTMENTS, p=status_probs)
+})
+
+appointments.to_csv(OUTPUT_FOLDER + "appointments.csv", index=False)
+
+
+# =====================================================
+# 3. CLAIMS (billing)
+# =====================================================
+billed = np.random.uniform(200, 5000, N_CLAIMS).round(2)
+
+denied = np.random.choice([0, 1], N_CLAIMS, p=[0.85, 0.15])
+paid = np.where(denied == 1, 0, billed * np.random.uniform(0.6, 1.0, N_CLAIMS))
+
+claims = pd.DataFrame({
+    "ClaimID": range(1, N_CLAIMS + 1),
+    "Date": random_dates(N_CLAIMS),
+    "Payer": np.random.choice(payers, N_CLAIMS),
+    "BilledAmount": billed,
+    "PaidAmount": paid.round(2),
+    "Denied": denied
+})
+
+claims.to_csv(OUTPUT_FOLDER + "claims.csv", index=False)
+
+
+# =====================================================
+# 4. DATE DIMENSION
+# =====================================================
+start_date = datetime(2023, 1, 1)
+end_date = datetime(2025, 12, 31)
+
+dates = pd.date_range(start_date, end_date)
+
+date_dim = pd.DataFrame({
+    "Date": dates,
+    "Year": dates.year,
+    "Month": dates.month,
+    "MonthName": dates.strftime("%b"),
+    "Quarter": dates.quarter,
+    "YearMonth": dates.strftime("%Y-%m")
+})
+
+date_dim.to_csv(OUTPUT_FOLDER + "date_dim.csv", index=False)
+
+
+print("✅ Files created:")
+print(" - encounters.csv")
+print(" - appointments.csv")
+print(" - claims.csv")
+print(" - date_dim.csv")`
+    },
+    ingest: {
+      title: 'Ingest: read CSV into Spark DataFrames and write Delta tables',
+      code: `from pyspark.sql import functions as F
+
+BASE_PATH = "/Volumes/workspace/default/healthcare_raw"
+files = {
+  "appointments": f"{BASE_PATH}/appointments.csv",
+  "claims": f"{BASE_PATH}/claims.csv",
+  "date_dim": f"{BASE_PATH}/date_dim.csv",
+  "encounters": f"{BASE_PATH}/encounters.csv",
+}
+
+dfs = {}
+for name, path in files.items():
+    df = (spark.read.option("header", True).option("inferSchema", True).csv(path))
+    if "Date" in df.columns:
+        df = df.withColumn("Date", F.to_date(F.col("Date")))
+    dfs[name] = df
+
+for name, df in dfs.items():
+    df.write.mode("overwrite").format("delta").saveAsTable(f"workspace.default.{name}")`
+    },
+    model: {
+      title: 'Model: create BI-ready views joined to the Date dimension',
+      code: `-- Example: encounters view joined to date_dim
+CREATE OR REPLACE VIEW workspace.default.vw_encounters AS
+SELECT
+  e.*,
+  d.Year, d.Month, d.MonthName, d.Quarter, d.YearMonth
+FROM workspace.default.encounters e
+LEFT JOIN workspace.default.date_dim d
+  ON e.Date = d.Date;
+
+-- Repeat for claims + appointments:
+-- vw_claims, vw_appointments`
+    },
+    validate: {
+      title: 'Validate: run KPI checks to confirm the load and logic',
+      code: `-- Row counts
+SELECT 'encounters' AS t, COUNT(*) AS rows FROM workspace.default.encounters;
+
+-- Avg wait time (minutes)
+SELECT ROUND(AVG(WaitTimeMinutes), 2) AS avg_wait_min
+FROM workspace.default.encounters;
+
+-- Denial rate (%)
+SELECT ROUND(AVG(CAST(Denied AS DOUBLE)) * 100, 2) AS denial_rate_pct
+FROM workspace.default.claims;`
+    }
+
+  };
+
+  const titleEl = document.getElementById("stepTitle");
+  const codeEl = document.getElementById("stepCode");
+  const stepEls = Array.from(document.querySelectorAll(".step"));
+
+  function setStep(key){
+    stepEls.forEach(s => s.classList.toggle("active", s.dataset.step === key));
+    const s = steps[key];
+    if (!s) return;
+    titleEl.textContent = s.title;
+
+    const innerCode = codeEl.querySelector("code") || codeEl;
+    innerCode.textContent = s.code;
+  }
+
+  stepEls.forEach(el => {
+    el.addEventListener("click", () => setStep(el.dataset.step));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") setStep(el.dataset.step);
+    });
+  });
+</script>
+
+</body>
+</html>
+
+

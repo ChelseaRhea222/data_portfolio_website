@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SmartHealth Clinic EHR Prototype | Chelsea Rhea</title>
+  <meta name="description" content="Case study: HTML/JavaScript EHR prototype with an AWS-backed data layer, relational schema, and REST API integration." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    /* ---------- Hero layout ---------- */
+    .hero{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .hero h1{
+      margin:0;
+      font-size:26px;
+      letter-spacing:-.02em;
+    }
+
+    /* ---------- CTA buttons (smaller) ---------- */
+    .cta-row{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: var(--surface);
+      font-weight:700;
+      font-size:12px;
+      color:var(--ink);
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .btn.primary{
+      background: color-mix(in oklab,var(--primary) 12%, white);
+      border-color: color-mix(in oklab,var(--primary) 28%, var(--border));
+    }
+    .btn:hover{
+      background: color-mix(in oklab,var(--highlight) 16%, white);
+      border-color: color-mix(in oklab,var(--accent) 25%, var(--border));
+    }
+
+    /* ---------- Pipeline steps ---------- */
+    .pipeline-steps{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:10px;
+      margin-top:12px;
+    }
+    .pipe-step{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:16px 20px;
+      border-radius:18px;
+      background: var(--surface);
+      border:1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      min-width:220px;
+    }
+    .pipe-step img{
+      width:28px;
+      height:28px;
+      object-fit:contain;
+      flex:0 0 auto;
+    }
+    .pipe-step strong{
+      display:block;
+      font-size:15px;
+      font-weight:900;
+      color:var(--ink);
+    }
+    .pipe-step span{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:600;
+    }
+    .pipe-arrow{
+      font-size:40px;
+      font-weight:1800;
+      color: var(--accent);
+      margin:0 4px;
+    }
+
+    /* ---------- Pipeline explorer ---------- */
+    .pipeline-wrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .stepper{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .step{
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      padding:8px 10px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .step.active{
+      background: color-mix(in oklab,var(--primary) 16%, white);
+      border-color: color-mix(in oklab,var(--primary) 30%, var(--border));
+    }
+
+    pre.code{
+      margin:10px 0 0;
+      padding:12px;
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 35%, white), white);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:auto;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--ink);
+    }
+    .note{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-weight:650;
+    }
+
+    /* ---------- Demo embed ---------- */
+    .embed{
+      border:1px dashed color-mix(in oklab,var(--primary) 35%, var(--border));
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 45%, white), white);
+      min-height:520px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      text-align:center;
+      color:var(--muted);
+      font-weight:750;
+    }
+    .embed iframe{
+      width:100%;
+      height:820px;
+      border:0;
+      border-radius:14px;
+      background:white;
+    }
+
+    /* ---------- Endpoint list ---------- */
+    .endpoint{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .endpoint .tag{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      font-weight:900;
+      font-size:12px;
+      color:var(--ink);
+      white-space:nowrap;
+    }
+    .endpoint code{
+      flex:1 1 280px;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 25%, white), white);
+      overflow:auto;
+      font-size:12px;
+    }
+
+    /* ---------- Table preview ---------- */
+    .table-title{
+      margin:12px 0 6px;
+      font-weight:900;
+      color:var(--ink);
+      font-size:13px;
+      letter-spacing:-.01em;
+    }
+
+    @media (max-width: 900px){
+      .pipeline-wrap{ grid-template-columns: 1fr; }
+      .pipeline-steps{ flex-direction:column; align-items:flex-start; }
+      .pipe-arrow{ transform: rotate(90deg); }
+      .embed iframe{ height:900px; }
+    }
+    @media (max-width: 600px){
+      .cta-row{ gap:6px; }
+      .btn{ font-size:9px; padding:3px 6px; border-radius:8px; }
+      .pipeline-steps{
+        grid-template-columns: 1fr;
+        row-gap:8px;
+      }
+      .pipe-arrow{
+        transform: rotate(90deg);
+        font-size: 18px;
+        justify-self: start;
+      }
+      .pipe-step{
+        padding:6px 8px;
+        gap:6px;
+      }
+      .pipe-step img{
+        width:12px;
+        height:12px;
+      }
+      .pipe-step strong{ font-size:9px; }
+      .pipe-step span{ font-size:8px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+ <div class="brand">
+  <div class="logo">
+    <img src="../assets/profile.png" alt="Chelsea Rhea">
+  </div>
+
+        <div class="brand-text">
+          Chelsea Rhea
+          <small>Data Portfolio</small>
+        </div>
+      </div>
+
+    <nav class="menu">
+      <a class="item" href="../index.html">Home</a>
+      <a class="item active" href="../index.html#projects">Projects</a>
+      <a class="item" href="../index.html#resume">Resume</a>
+      <div class="divider"></div>
+      <a class="item" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      <a class="item" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      © <span id="year"></span> Chelsea Rhea
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <main class="content">
+
+      <!-- Hero -->
+      <section class="card">
+        <div class="hero">
+          <div>
+            <h1>SmartHealth Clinic — EHR Prototype</h1>
+            <p class="note" style="margin-top:6px;">
+              A front-end prototype that demonstrates secure login (RBAC), patient records, appointments, labs, secure messages, and an audit trail.
+              The architecture below shows how this UI connects to a real backend (AWS database + REST API).
+            </p>
+
+            <div class="pipeline-steps" aria-label="Architecture pipeline">
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/html5" alt="HTML">
+                <div><strong>Development</strong><span>HTML + JavaScript UI</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="../assets/icons/aws.svg" alt="AWS">
+                <div><strong>AWS</strong><span>Database + services</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="../assets/icons/sql-db.svg" alt="Schema">
+                <div><strong>Schema</strong><span>Patients, Appointments, Labs, Audit</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="../assets/icons/REST-API.svg" alt="API">
+                <div><strong>API Connection</strong><span>REST endpoints (JSON)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <a class="btn primary" href="../projects.html">← Back</a>
+            <a class="btn" href="#demo">Demo</a>
+            <a class="btn" href="#backend">Backend</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pipeline Explorer -->
+      <section class="pipeline-wrap" aria-label="Pipeline explorer">
+        <article class="card" aria-label="Pipeline steps">
+          <div class="card-head">
+            <h3>Pipeline Explorer</h3>
+            <div class="legend">
+              <span class="pill">Click a step</span>
+            </div>
+          </div>
+
+          <div class="stepper" role="tablist" aria-label="Pipeline steps">
+            <div class="step active" role="tab" tabindex="0" data-step="client">Client UI</div>
+            <div class="step" role="tab" tabindex="0" data-step="auth">Auth (RBAC)</div>
+            <div class="step" role="tab" tabindex="0" data-step="crud">CRUD</div>
+            <div class="step" role="tab" tabindex="0" data-step="audit">Audit Log</div>
+            <div class="step" role="tab" tabindex="0" data-step="db">AWS DB</div>
+            <div class="step" role="tab" tabindex="0" data-step="api">API Layer</div>
+          </div>
+
+          <p id="stepTitle" class="note" style="font-weight:900; color:var(--ink); margin-top:12px;">
+            Client UI: HTML + JavaScript screens for workflow + validation.
+          </p>
+
+          <p id="stepDesc" class="note">
+            The embedded demo shows the UX. In production, the UI reads and writes data through secure REST endpoints.
+          </p>
+
+          <pre class="code" id="stepCode"><code>// Client (concept) — fetch patient list
+const res = await fetch(`${API_BASE}/patients`, {
+  headers: { "Authorization": `Bearer ${token}` }
+});
+const data = await res.json();
+renderPatients(data.items);</code></pre>
+
+
+        </article>
+
+
+      </section>
+
+      <!-- Demo Embed -->
+      <section class="card" id="demo" style="margin-top:14px;" aria-label="Demo embed">
+        <div class="card-head">
+          <h3>Interactive Demo (HTML/JS)</h3>
+          <div class="legend">
+            <span class="pill">Embedded</span>
+          </div>
+        </div>
+
+        <div class="embed">
+          <iframe
+            src="./Demo.html"
+            title="SmartHealth Clinic EHR Prototype Demo"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          ></iframe>
+        </div>
+      </section>
+
+      <!-- Backend -->
+      <section class="card" id="backend" style="margin-top:14px;">
+        <div class="card-head">
+          <h3>Backend (AWS + REST API)</h3>
+          <div class="cta-row">
+            <button class="btn" id="refreshBtn" type="button">Refresh</button>
+            <span class="pill alt" id="statusPill">Not connected</span>
+          </div>
+        </div>
+
+
+        <div class="endpoint">
+          <span class="tag">GET</span>
+          <code id="patientsUrl">In Progress...API has not been set yet</code>
+        </div>
+        <div class="endpoint">
+          <span class="tag">GET</span>
+          <code id="apptsUrl">In Progress...API has not been set yet</code>
+        </div>
+        <div class="endpoint">
+          <span class="tag">GET</span>
+          <code id="auditUrl">In Progress...API has not been set yet</code>
+        </div>
+
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // Footer year
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // ================= Pipeline Explorer (click steps) =================
+  const steps = {
+    client: {
+      title: "Client UI: HTML + JavaScript screens for workflow + validation.",
+      code: `// Client (concept) — fetch patient list
+const res = await fetch(\`\${API_BASE}/patients\`, {
+  headers: { "Authorization": \`Bearer \${token}\` }
+});
+const data = await res.json();
+renderPatients(data.items);`,
+      tags: ["Frontend: HTML/JS", "Transport: HTTPS"]
+    },
+    auth: {
+      title: "Auth (RBAC): login + role-based permissions",
+      code: `POST /auth/login
+{
+  "username": "drdemo",
+  "password": "••••••"
+}
+
+Response:
+{ "token": "<jwt>", "role": "Physician" }`,
+      tags: ["RBAC", "JWT/session token"]
+    },
+    crud: {
+      title: "CRUD: create/read/update records via API",
+      code: `// Examples
+GET  /patients
+POST /patients
+GET  /appointments?patient_id=123
+POST /labs
+POST /messages`,
+      tags: ["REST routes", "JSON payloads"]
+    },
+    audit: {
+      title: "Audit Log: immutable security trail",
+      code: `POST /audit
+{
+  "module": "Patients",
+  "action": "Created patient record",
+  "target": "PatientID=42",
+  "severity": "Info"
+}`,
+      tags: ["Compliance", "Append-only log"]
+    },
+    db: {
+      title: "AWS DB: stored records + constraints",
+      code: `-- Schema (concept)
+PATIENTS(id PK, first_name, last_name, dob, phone)
+APPOINTMENTS(id PK, patient_id FK, provider, dt, reason)
+LAB_RESULTS(id PK, patient_id FK, test, value, result_date)
+MESSAGES(id PK, from_user, to_user, subject, body, sent_at)
+AUDIT_LOG(id PK, ts, user, role, module, action, target, severity)`,
+      tags: ["AWS RDS", "Constraints + indexes"]
+    },
+    api: {
+      title: "API Layer: secure gateway to the database",
+      code: `AWS (example)
+API Gateway  →  Lambda  →  RDS/DynamoDB
+             ↘ CloudWatch (logging)
+Auth: Cognito (optional)`,
+      tags: ["API Gateway/Lambda", "Observability"]
+    }
+  };
+
+  const titleEl = document.getElementById("stepTitle");
+  const descEl  = document.getElementById("stepDesc");
+  const codeEl  = document.getElementById("stepCode");
+  const tagsEl  = document.getElementById("stepTags");
+  const stepEls = Array.from(document.querySelectorAll(".step"));
+
+  function setStep(key){
+    stepEls.forEach(s => s.classList.toggle("active", s.dataset.step === key));
+    const s = steps[key];
+    if (!s) return;
+
+    titleEl.textContent = s.title;
+    if (descEl) descEl.textContent = s.desc || "";
+
+    const innerCode = codeEl.querySelector("code") || codeEl;
+    innerCode.textContent = s.code;
+
+    if (tagsEl){
+      tagsEl.innerHTML = "";
+      s.tags.forEach((t, i) => {
+        const span = document.createElement("span");
+        span.className = "pill" + (i === 1 ? " alt" : "");
+        span.textContent = t;
+        tagsEl.appendChild(span);
+      });
+    }
+  }
+
+  stepEls.forEach(el => {
+    el.addEventListener("click", () => setStep(el.dataset.step));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") setStep(el.dataset.step);
+    });
+  });
+
+  // ================= Backend (API) — placeholder wiring =================
+  // ✅ NEXT STEP: set your API base URL when you're ready
+  const API_BASE = ""; // e.g. "https://api.yourdomain.com/v1"
+  const token = "";    // e.g. a demo JWT, or leave blank if your endpoints are public for demo
+
+  const statusPill = document.getElementById("statusPill");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  const endpoints = API_BASE ? {
+    patients: `${API_BASE}/patients`,
+    appointments: `${API_BASE}/appointments`,
+    audit: `${API_BASE}/audit`,
+  } : null;
+
+  function setStatus(t){ if (statusPill) statusPill.textContent = t; }
+
+  function renderTable(tableEl, items, cols){
+    if (!tableEl) return;
+    if (!items || items.length === 0){
+      tableEl.innerHTML = `<thead><tr>${cols.map(c=>`<th>${c.header}</th>`).join("")}</tr></thead>
+                           <tbody><tr><td colspan="${cols.length}" class="note">No rows yet</td></tr></tbody>`;
+      return;
+    }
+    tableEl.innerHTML =
+      `<thead><tr>${cols.map(c=>`<th>${c.header}</th>`).join("")}</tr></thead>` +
+      `<tbody>` +
+        items.map(r => `<tr>${cols.map(c=>`<td>${c.value(r) ?? ""}</td>`).join("")}</tr>`).join("") +
+      `</tbody>`;
+  }
+
+  async function fetchJSON(url){
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const r = await fetch(url, { method:"GET", headers });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  }
+
+  async function refreshAll(){
+    if (!endpoints){
+      setStatus("Set API_BASE");
+      return;
+    }
+
+    document.getElementById("patientsUrl").textContent = endpoints.patients;
+    document.getElementById("apptsUrl").textContent = endpoints.appointments;
+    document.getElementById("auditUrl").textContent = endpoints.audit;
+
+    try{
+      setStatus("Loading…");
+      const [patients, appts, audit] = await Promise.all([
+        fetchJSON(endpoints.patients),
+        fetchJSON(endpoints.appointments),
+        fetchJSON(endpoints.audit),
+      ]);
+
+      renderTable(document.getElementById("patientsTable"), patients.items || patients, [
+        { header:"ID", value:r => r.id },
+        { header:"Name", value:r => `${r.last_name || r.lastName || ""}, ${r.first_name || r.firstName || ""}`.replace(/^, /,"") },
+        { header:"DOB", value:r => r.dob },
+        { header:"Phone", value:r => r.phone },
+      ]);
+
+      renderTable(document.getElementById("apptsTable"), appts.items || appts, [
+        { header:"Patient", value:r => r.patient_name || r.patientName || r.patient_id || r.patientId },
+        { header:"Provider", value:r => r.provider },
+        { header:"Date/Time", value:r => (r.dt || r.dateTime || "").toString().slice(0,16).replace("T"," ") },
+        { header:"Reason", value:r => r.reason },
+      ]);
+
+      renderTable(document.getElementById("auditTable"), audit.items || audit, [
+        { header:"Time", value:r => (r.ts || r.timestamp || "").toString().slice(0,19).replace("T"," ") },
+        { header:"User", value:r => r.user },
+        { header:"Module", value:r => r.module },
+        { header:"Action", value:r => r.action },
+        { header:"Severity", value:r => r.severity },
+      ]);
+
+      setStatus("Live");
+    }catch(e){
+      console.error(e);
+      setStatus("Error (check console / CORS / auth)");
+    }
+  }
+
+  if (refreshBtn) refreshBtn.addEventListener("click", refreshAll);
+</script>
+
+</body>
+</html>

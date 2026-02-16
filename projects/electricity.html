@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Energy Net Metering ETL (EIA API → BigQuery) | Chelsea Rhea</title>
+  <meta name="description" content="Case study: Python ETL pulls EIA net metering data via API and loads it into BigQuery for analytics and dashboards." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    /* ---------- Hero layout ---------- */
+    .hero {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .hero h1{
+      margin:0;
+      font-size:26px;
+      letter-spacing:-.02em;
+    }
+
+    /* ---------- CTA buttons (smaller) ---------- */
+    .cta-row{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: var(--surface);
+      font-weight:700;
+      font-size:12px;
+      color:var(--ink);
+      cursor:pointer;
+    }
+    .btn.primary{
+      background: color-mix(in oklab,var(--primary) 12%, white);
+      border-color: color-mix(in oklab,var(--primary) 28%, var(--border));
+    }
+    .btn:hover{
+      background: color-mix(in oklab,var(--highlight) 16%, white);
+      border-color: color-mix(in oklab,var(--accent) 25%, var(--border));
+    }
+
+    /* ---------- KPI row (smaller) ---------- */
+    .kpi-mini{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:6px;
+      margin-top:8px;
+      min-width:150px;
+    }
+    .kpi-mini .kpi{
+      box-shadow: var(--shadow-soft);
+      padding:6px 10px;
+      transform: scale(0.9);
+      min-width:150px;
+    }
+    .kpi-title{ font-size:11px; }
+    .kpi-value{ font-size:18px; }
+    .kpi-trend{ font-size:11px; }
+
+/* ---------- Pipeline steps (always one row, responsive scale) ---------- */
+.pipeline-steps{
+  display:grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; /* step, arrow, step... */
+  align-items:stretch;
+  gap: clamp(6px, 1.2vw, 14px);
+  margin-top:12px;
+  width:100%;
+  min-width:0;
+}
+.pipe-step{
+  display:flex;
+  align-items:center;
+  gap: clamp(6px, 1vw, 12px);
+  padding: clamp(8px, 1.2vw, 16px) clamp(10px, 2vw, 20px);
+  border-radius:18px;
+  background: var(--surface);
+  border:1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  min-width:0; /* allow shrinking */
+}
+.pipe-step > div{ min-width:0; } /* allow text to ellipsis */
+.pipe-step img{
+  width: clamp(14px, 2vw, 28px);
+  height: clamp(14px, 2vw, 28px);
+  flex:0 0 auto;
+}
+.pipe-step strong{
+  display:block;
+  font-size: clamp(11px, 1.3vw, 15px);
+  font-weight:900;
+  color:var(--ink);
+  line-height:1.05;
+}
+.pipe-step span{
+  display:block;
+  font-size: clamp(9px, 1.1vw, 13px);
+  color:var(--muted);
+  font-weight:600;
+
+  /* keep the 4 cards on one line by truncating subtitles */
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.pipe-arrow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size: clamp(16px, 2.5vw, 40px);
+  font-weight:1800;
+  color: var(--accent);
+  margin:0;
+  line-height:1;
+  user-select:none;
+}
+
+/* ---------- Pipeline explorer ---------- */
+    .pipeline-wrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .stepper{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .step{
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      padding:8px 10px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .step.active{
+      background: color-mix(in oklab,var(--primary) 16%, white);
+      border-color: color-mix(in oklab,var(--primary) 30%, var(--border));
+    }
+
+    pre.code{
+      margin:10px 0 0;
+      padding:12px;
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 35%, white), white);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:auto;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--ink);
+    }
+    .note{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-weight:650;
+    }
+
+    /* ---------- Screenshot card image ---------- */
+    .source-preview{
+      margin-top: 10px;
+    }
+    .source-preview img{
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* ---------- Dashboard embed ---------- */
+    .embed{
+      border:1px dashed color-mix(in oklab,var(--primary) 35%, var(--border));
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 45%, white), white);
+      min-height:420px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      text-align:center;
+      color:var(--muted);
+      font-weight:750;
+    }
+    .embed iframe{
+      width:100%;
+      height:520px;
+      border:0;
+      border-radius: 14px;
+    }
+
+    @media (max-width: 900px){
+      .pipeline-wrap{ grid-template-columns: 1fr; }
+      .kpi-mini{ grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 600px){
+      .cta-row{ gap:6px; }
+      .btn{ font-size:9px; padding:3px 6px; border-radius:8px; }
+      .pipeline-steps{
+        grid-template-columns: 1fr;
+        row-gap:8px;
+      }
+      .pipe-arrow{
+        transform: rotate(90deg);
+        font-size: 18px;
+        justify-self: start;
+      }
+      .pipe-step{
+        padding:6px 8px;
+        gap:6px;
+      }
+      .pipe-step img{
+        width:12px;
+        height:12px;
+      }
+      .pipe-step strong{ font-size:9px; }
+      .pipe-step span{ font-size:8px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+  <div class="brand">
+  <div class="logo">
+    <img src="../assets/profile.png" alt="Chelsea Rhea">
+  </div>
+
+        <div class="brand-text">
+          Chelsea Rhea
+          <small>Data Portfolio</small>
+        </div>
+      </div>
+
+    <nav class="menu">
+      <a class="item" href="../index.html">Home</a>
+      <a class="item active" href="../index.html#projects">Projects</a>
+      <a class="item" href="../index.html#resume">Resume</a>
+      <div class="divider"></div>
+      <a class="item" href="https://github.com/" target="_blank">GitHub</a>
+      <a class="item" href="https://www.linkedin.com/" target="_blank">LinkedIn</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      © <span id="year"></span> Chelsea Rhea
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <main class="content">
+
+      <!-- Hero -->
+      <section class="card">
+        <div class="hero">
+
+          <div>
+            <h1>Energy Net Metering ETL</h1>
+
+            <div class="pipeline-steps">
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/openapiinitiative/EE6C4D" alt="API">
+                <div><strong>Source</strong><span>Open Data API</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/python/EE6C4D" alt="Python">
+                <div><strong>ETL</strong><span>Python</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/googlebigquery/EE6C4D" alt="BigQuery">
+                <div><strong>Warehouse</strong><span>BigQuery</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/looker/EE6C4D" alt="Looker">
+                <div><strong>BI Layer</strong><span>Looker Studio</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <a class="btn primary" href="../projects.html">← Back</a>
+            <a class="btn" href="https://github.com/" target="_blank">GitHub</a>
+            <a class="btn" href="#dashboard">Dashboard</a>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Pipeline Explorer -->
+      <section class="pipeline-wrap" aria-label="Pipeline explorer">
+        <article class="card" aria-label="Pipeline steps">
+          <div class="card-head">
+            <h3>Pipeline Explorer</h3>
+            <div class="legend">
+              <span class="pill">Click a step</span>
+            </div>
+          </div>
+
+          <div class="stepper" role="tablist" aria-label="Pipeline steps">
+            <div class="step active" role="tab" tabindex="0" data-step="extract">Extract</div>
+            <div class="step" role="tab" tabindex="0" data-step="validate">Validate</div>
+            <div class="step" role="tab" tabindex="0" data-step="transform">Transform</div>
+            <div class="step" role="tab" tabindex="0" data-step="load">Load</div>
+        
+          </div>
+
+          <p id="stepTitle" class="note" style="font-weight:900; color:var(--ink); margin-top:12px;">
+            Extract: call EIA endpoint with params
+          </p>
+
+
+          <pre class="code" id="stepCode"><code># etl_fetch.py (excerpt)
+URL = "https://api.eia.gov/v2/electricity/state-electricity-profiles/net-metering/data/"
+
+params = {
+  "api_key": API_KEY,
+  "frequency": "annual",
+  "data[0]": "capacity",
+  "data[1]": "customers",
+  "sort[0][column]": "period",
+  "sort[0][direction]": "desc",
+  "offset": 0,
+  "length": 5000
+}
+
+r = requests.get(URL, params=params, timeout=30)
+records = r.json()["response"]["data"]</code></pre>
+
+   
+        </article>
+
+      </section>
+
+      <!-- Source API Configuration -->
+      <section class="card" style="margin-top:14px;" aria-label="Source API configuration">
+        <div class="card-head">
+          <h3>Source API Configuration</h3>
+          <div class="legend"></div>
+        </div>
+
+        <div class="source-preview">
+          <img src="../assets/eia_api.png" alt="EIA API configuration screenshot" />
+        </div>
+      </section>
+
+      <!-- BigQuery Load -->
+      <section class="card" style="margin-top:14px;" aria-label="BigQuery load">
+        <div class="card-head">
+          <h3>BigQuery Load</h3>
+          <div class="legend"></div>
+        </div>
+
+        <div class="source-preview">
+          <img src="../assets/eia_bigquery.PNG" alt="EIA BigQuery load screenshot" />
+        </div>
+      </section>
+
+      <!-- Dashboard Embed -->
+      <section class="card" id="dashboard" style="margin-top:14px;" aria-label="Dashboard embed">
+        <div class="card-head">
+          <h3>Dashboard (Looker Studio)</h3>
+          <div class="legend">
+            <span class="pill">Embedded</span>
+          </div>
+        </div>
+
+        <!-- Replace placeholder with your Looker Studio iframe when ready -->
+        <div class="embed">
+          <iframe width="600" height="450" src="https://lookerstudio.google.com/embed/reporting/525df53f-3542-453e-b0bb-8eca4f211491/page/lQHmF" frameborder="0" style="border:0" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+        </div>
+      </section>
+
+
+    </main>
+  </div>
+</div>
+
+<script>
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  const steps = {
+    extract: {
+      title: "Extract: call EIA endpoint with params",
+      desc: "Requests hits the EIA net metering endpoint and returns a JSON payload of annual capacity + customers by state, sector, and technology.",
+      code: `# etl_fetch.py 
+# Read and validate required API credentials.
+API_KEY = os.getenv("EIA_API_KEY")
+if not API_KEY:
+    raise ValueError("Missing EIA_API_KEY. Put it in a .env file.")
+
+# EIA endpoint for state electricity net metering data.
+URL = "https://api.eia.gov/v2/electricity/state-electricity-profiles/net-metering/data/"
+
+def fetch_net_metering(limit=5000, offset=0):
+    # Build query parameters (frequency, selected metrics, sorting, pagination).
+    params = {
+        "api_key": API_KEY,
+        "frequency": "annual",
+        "data[0]": "capacity",
+        "data[1]": "customers",
+        "sort[0][column]": "period",
+        "sort[0][direction]": "desc",
+        "offset": offset,
+        "length": limit
+    }
+
+    # Call the API, fail fast on HTTP errors, and return the records array.
+    r = requests.get(URL, params=params, timeout=30)
+    r.raise_for_status()
+    payload = r.json()
+    return payload["response"]["data"]`,
+      tags: ["Input: EIA API (JSON)", "Output: records[]"]
+    },
+    validate: {
+      title: "Validate: quick checks before loading",
+      desc: "Confirms required fields exist and inspects columns so you can spot missing/odd values early.",
+      code: `# etl_fetch.py
+    # Basic validation/inspection output for quick sanity checks.
+    print("Pulled rows:", len(df))
+    print("Columns:", df.columns.tolist())
+    print(df.head(10))
+
+    # Write a local sample file for inspection/debugging.
+    df.to_csv("net_metering_sample.csv", index=False)
+    print("Wrote net_metering_sample.csv")`,
+      tags: ["Checks: row count", "Checks: schema preview"]
+    },
+    transform: {
+      title: "Transform: normalize names + types",
+      desc: "Renames hyphenated fields, casts period/capacity/customers, and stamps an ingested_at timestamp.",
+      code: `# etl_to_bigquery.py
+    # Convert API records to a DataFrame and standardize schema/types.
+    df = pd.DataFrame(records).copy()
+
+    df = df.rename(columns={
+        "capacity-units": "capacity_units",
+        "customers-units": "customers_units",
+    })
+
+    df["period"] = pd.to_numeric(df["period"], errors="coerce").astype("Int64")
+    df["capacity"] = pd.to_numeric(df["capacity"], errors="coerce")
+    df["customers"] = pd.to_numeric(df["customers"], errors="coerce").astype("Int64")
+
+    df["ingested_at"] = pd.Timestamp.now("UTC")
+
+    # Drop rows missing required business keys.
+    df = df.dropna(subset=["period", "state", "technology", "sector"])
+
+    return df`,
+      tags: ["Output: clean DataFrame", "Adds: ingested_at"]
+    },
+    load: {
+      title: "Load (BigQuery): create dataset/table + append",
+      desc: "Creates the dataset/table if missing, then appends rows (batch append) into BigQuery.",
+      code: `# etl_to_bigquery.py
+# Append transformed rows into the destination BigQuery table.
+    table_id = f"{PROJECT_ID}.{DATASET}.{TABLE}"
+
+    job_config = bigquery.LoadJobConfig(
+        write_disposition="WRITE_APPEND"
+    )
+
+    job = client.load_table_from_dataframe(df, table_id, job_config=job_config)
+    job.result()
+
+    print(f"Loaded {len(df)} rows into {table_id}")`,
+      tags: ["Output: energy.net_metering_annual", "Mode: WRITE_APPEND"]
+    }
+   
+  };
+
+  const titleEl = document.getElementById("stepTitle");
+  const descEl = document.getElementById("stepDesc");
+  const codeEl = document.getElementById("stepCode");
+  const tagsEl = document.getElementById("stepTags");
+  const stepEls = Array.from(document.querySelectorAll(".step"));
+
+  function setStep(key){
+    stepEls.forEach(s => s.classList.toggle("active", s.dataset.step === key));
+    const s = steps[key];
+    if (!s) return;
+
+    titleEl.textContent = s.title;
+    descEl.textContent = s.desc;
+
+    const innerCode = codeEl.querySelector("code") || codeEl;
+    innerCode.textContent = s.code;
+
+    if (tagsEl){
+      tagsEl.innerHTML = "";
+      s.tags.forEach((t, i) => {
+        const span = document.createElement("span");
+        span.className = "pill" + (i % 2 === 1 ? " alt" : "");
+        span.textContent = t;
+        tagsEl.appendChild(span);
+      });
+    }
+  }
+
+  stepEls.forEach(el => {
+    el.addEventListener("click", () => setStep(el.dataset.step));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") setStep(el.dataset.step);
+    });
+  });
+</script>
+
+</body>
+</html>

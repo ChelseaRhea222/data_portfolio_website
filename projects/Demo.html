@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SmartHealth Clinic - EHR Prototype</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #f4f6f8; color: #333; }
+    header { background: #1c5d99; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 18px; }
+    header .user-info { font-size: 13px; opacity: 0.95; display:flex; gap:10px; align-items:center;}
+    .container { display: flex; height: calc(100vh - 50px); }
+    nav { width: 220px; background: #243447; color: white; padding: 15px 0; }
+    nav h2 { font-size: 14px; margin: 0 20px 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+    nav button { width: 100%; padding: 10px 20px; border: none; background: transparent; color: #ddd; text-align: left; cursor: pointer; font-size: 14px; }
+    nav button:hover, nav button.active { background: #1b2836; color: #fff; }
+    nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+    main { flex: 1; padding: 15px 20px; overflow-y: auto; }
+    .card { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px 20px; margin-bottom: 15px; }
+    .card h3 { margin-top: 0; }
+    .flex-2 { display: flex; gap: 15px; flex-wrap: wrap; }
+    .flex-2 > div { flex: 1 1 280px; }
+    label { display: block; font-size: 13px; margin-bottom: 4px; }
+    input, select, textarea { width: 100%; padding: 6px 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+    textarea { resize: vertical; min-height: 60px; }
+    button.primary { background: #1c5d99; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    button.primary:hover { background: #164a79; }
+    button.secondary { background: #e9eef5; border: 1px solid #c8d6ea; padding: 7px 12px; border-radius: 4px; cursor:pointer; font-size: 13px; }
+    button.secondary:hover { background:#dfe8f5; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table th, table td { border-bottom: 1px solid #eee; padding: 6px 4px; text-align: left; vertical-align: top; }
+    table th { background: #f0f0f0; }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: white; }
+    .badge-green { background: #2ecc71; }
+    .badge-blue  { background: #3498db; }
+    .badge-red   { background: #e74c3c; }
+    .small { font-size: 11px; color: #777; }
+
+    /* Login overlay */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 18px;
+    }
+    .login-box {
+      width: 480px; max-width: 100%;
+      background: white; border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      padding: 18px 20px;
+    }
+    .login-box h2 { margin: 0 0 8px; }
+    .login-box .demo-users {
+      background:#f7f9fc; border:1px solid #e6edf7; border-radius: 8px;
+      padding:10px; margin-top:10px; font-size: 12px;
+    }
+    .pill { display:inline-block; padding:2px 8px; border-radius: 999px; background:#eef4ff; border:1px solid #d8e6ff; font-size: 12px; }
+    .top-actions { display:flex; gap:8px; align-items:center; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>SmartHealth Clinic - EHR Prototype</h1>
+  <div class="user-info">
+    <span id="userDisplay" class="pill">Not logged in</span>
+    <div class="top-actions">
+      <button class="secondary" onclick="openAudit()">Audit Log</button>
+      <button class="secondary" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <nav>
+    <h2>Navigation</h2>
+    <button class="nav-btn active" data-target="patients">Patients</button>
+    <button class="nav-btn" data-target="appointments">Appointments</button>
+    <button class="nav-btn" data-target="labs">Lab Results</button>
+    <button class="nav-btn" data-target="messages">Secure Messages</button>
+    <button class="nav-btn" data-target="billing">Billing Summary</button>
+    <button class="nav-btn" data-target="audit">Audit Log</button>
+  </nav>
+
+  <main>
+    <!-- PATIENTS VIEW -->
+    <section id="patients" class="view">
+      <div class="card">
+        <h3>Patients</h3>
+        <p class="small">Demo flow: log in → add a patient → schedule an appointment → add a lab result → send a secure message → view audit log.</p>
+
+        <div class="flex-2">
+          <div>
+            <h4>Add New Patient</h4>
+            <label>First Name</label>
+            <input id="patientFirstName" type="text" placeholder="e.g., John">
+            <label>Last Name</label>
+            <input id="patientLastName" type="text" placeholder="e.g., Smith">
+            <label>Date of Birth</label>
+            <input id="patientDob" type="date">
+            <label>Phone</label>
+            <input id="patientPhone" type="text" placeholder="e.g., 555-123-4567">
+            <button class="primary" onclick="addPatient()">Save Patient</button>
+          </div>
+
+          <div>
+            <h4>Patients List</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Patient</th>
+                  <th>DOB</th>
+                  <th>Phone</th>
+                </tr>
+              </thead>
+              <tbody id="patientsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- APPOINTMENTS VIEW -->
+    <section id="appointments" class="view" style="display:none;">
+      <div class="card">
+        <h3>Appointments</h3>
+        <p class="small">Appointments link patients and providers. In production, conflicts would be validated and audited.</p>
+        <div class="flex-2">
+          <div>
+            <h4>Schedule Appointment</h4>
+            <label>Patient</label>
+            <select id="appointmentPatient"></select>
+
+            <label>Provider</label>
+            <select id="appointmentProvider">
+              <option value="Dr. Emily Brown">Dr. Emily Brown (Family Medicine)</option>
+              <option value="Dr. Alex Lee">Dr. Alex Lee (Cardiology)</option>
+              <option value="Dr. Maria Gomez">Dr. Maria Gomez (Pediatrics)</option>
+            </select>
+
+            <label>Date & Time</label>
+            <input id="appointmentDateTime" type="datetime-local">
+
+            <label>Reason</label>
+            <input id="appointmentReason" type="text" placeholder="e.g., Annual physical">
+
+            <button class="primary" onclick="addAppointment()">Create Appointment</button>
+          </div>
+          <div>
+            <h4>Upcoming Appointments</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Provider</th>
+                  <th>Date/Time</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="appointmentsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LABS VIEW -->
+    <section id="labs" class="view" style="display:none;">
+      <div class="card">
+        <h3>Lab Results</h3>
+        <p class="small">Demo lab results. In production, labs would flow in via HL7/API interfaces and be validated.</p>
+        <div class="flex-2">
+          <div>
+            <h4>Add Lab Result (Demo)</h4>
+            <label>Patient</label>
+            <select id="labPatient"></select>
+
+            <label>Test Name</label>
+            <input id="labTest" type="text" placeholder="e.g., CBC">
+
+            <label>Result Value</label>
+            <input id="labValue" type="text" placeholder="e.g., Normal">
+
+            <label>Result Date</label>
+            <input id="labDate" type="date">
+
+            <button class="primary" onclick="addLabResult()">Save Lab Result</button>
+          </div>
+          <div>
+            <h4>Recent Lab Results</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Test</th>
+                  <th>Value</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="labsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MESSAGES VIEW -->
+    <section id="messages" class="view" style="display:none;">
+      <div class="card">
+        <h3>Secure Messages</h3>
+        <p class="small">Secure messaging is role-controlled. In production, messages would be encrypted and audited.</p>
+        <div class="flex-2">
+          <div>
+            <h4>New Message</h4>
+            <label>To (Staff)</label>
+            <select id="messageTo">
+              <option value="Nurse Kelly">Nurse Kelly</option>
+              <option value="Billing - Mark">Billing - Mark</option>
+              <option value="Front Desk - Anna">Front Desk - Anna</option>
+            </select>
+
+            <label>Subject</label>
+            <input id="messageSubject" type="text" placeholder="e.g., Follow-up needed">
+
+            <label>Message</label>
+            <textarea id="messageBody" placeholder="Type a quick message..."></textarea>
+
+            <button class="primary" onclick="addMessage()">Send Message</button>
+          </div>
+          <div>
+            <h4>Inbox (Demo)</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Subject</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="messagesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BILLING VIEW -->
+    <section id="billing" class="view" style="display:none;">
+      <div class="card">
+        <h3>Billing Summary (Demo)</h3>
+        <p class="small">Billing is simplified for demo. In production this links encounters, CPT/ICD codes, and claims.</p>
+        <table>
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>Total Visits This Month</td><td>124</td></tr>
+            <tr><td>Claims Submitted</td><td>110</td></tr>
+            <tr><td>Average Days to Payment</td><td>12</td></tr>
+            <tr><td>Claim Denial Rate</td><td>4%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- AUDIT VIEW -->
+    <section id="audit" class="view" style="display:none;">
+      <div class="card">
+        <h3>Audit Log (HIPAA Control Demo)</h3>
+        <p class="small">
+          This panel demonstrates the type of audit trail required in healthcare: who did what, when, in which module, and on which record.
+        </p>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+          <button class="secondary" onclick="seedAuditDemo()">Generate Demo Events</button>
+          <button class="secondary" onclick="clearAudit()">Clear Log</button>
+          <span class="small" id="auditCount"></span>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>User</th>
+              <th>Role</th>
+              <th>Module</th>
+              <th>Action</th>
+              <th>Target</th>
+              <th>Severity</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" class="overlay">
+  <div class="login-box">
+    <h2>SmartHealth Secure Login</h2>
+    <p class="small">Demo-only authentication (simulates RBAC). Pick a user below or type credentials.</p>
+
+    <label>Username</label>
+    <input id="loginUser" type="text" placeholder="e.g., drdemo">
+
+    <label>Password</label>
+    <input id="loginPass" type="password" placeholder="e.g., demo123">
+
+    <button class="primary" style="width:100%;" onclick="login()">Login</button>
+
+    <div class="demo-users">
+      <div><strong>Demo Users:</strong></div>
+      <div class="small" style="margin-top:6px;">
+        <div>Physician: <code>drdemo</code> / <code>demo123</code></div>
+        <div>Nurse: <code>nursedemo</code> / <code>demo123</code></div>
+        <div>Billing: <code>billingdemo</code> / <code>demo123</code></div>
+        <div>Front Desk: <code>frontdemo</code> / <code>demo123</code></div>
+        <div>Admin: <code>admindemo</code> / <code>demo123</code></div>
+      </div>
+      <div class="small" style="margin-top:8px;">
+        Tip: Log in as Billing or Front Desk to show restricted tabs (Labs/Messages disabled).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /**************
+   * Demo users (RBAC simulation)
+   **************/
+  const demoUsers = {
+    drdemo:     { password: "demo123", name: "Dr. Demo User", role: "Physician" },
+    nursedemo:  { password: "demo123", name: "Nurse Demo", role: "Nurse" },
+    billingdemo:{ password: "demo123", name: "Billing Demo", role: "Billing" },
+    frontdemo:  { password: "demo123", name: "Front Desk Demo", role: "FrontDesk" },
+    admindemo:  { password: "demo123", name: "Admin Demo", role: "Admin" },
+  };
+
+  // Simple role permissions for nav 
+  const rolePermissions = {
+    Physician:  { labs:true,  messages:true,  billing:true },
+    Nurse:      { labs:true,  messages:true,  billing:false },
+    Billing:    { labs:false, messages:false, billing:true },
+    FrontDesk:  { labs:false, messages:false, billing:false },
+    Admin:      { labs:true,  messages:true,  billing:true },
+  };
+
+  let currentUser = null; // { username, name, role }
+
+  /**************
+   * In-memory data stores 
+   **************/
+  const patients = [
+    { id: 1, firstName: "Alice", lastName: "Walker", dob: "1990-04-12", phone: "555-111-2222" },
+    { id: 2, firstName: "Brian", lastName: "Chen", dob: "1985-09-01", phone: "555-333-4444" }
+  ];
+  let nextPatientId = 3;
+
+  const appointments = [];
+  const labs = [];
+  const messages = [];
+
+  /**************
+   * Audit log
+   **************/
+  const auditLog = []; // entries: {ts,user,role,module,action,target,severity}
+
+  function nowStamp() {
+    return new Date().toLocaleString();
+  }
+
+  function logAudit(module, action, target = "", severity = "Info") {
+    const entry = {
+      ts: nowStamp(),
+      user: currentUser ? currentUser.name : "Unknown",
+      role: currentUser ? currentUser.role : "Unknown",
+      module,
+      action,
+      target,
+      severity
+    };
+    auditLog.unshift(entry); // newest first
+    renderAudit();
+  }
+
+  function renderAudit() {
+    const tbody = document.getElementById("auditTableBody");
+    tbody.innerHTML = "";
+
+    auditLog.forEach(e => {
+      const tr = document.createElement("tr");
+      const sevBadge = e.severity === "Critical" ? "badge-red"
+                    : e.severity === "Warning"  ? "badge-blue"
+                    : "badge-green";
+      tr.innerHTML = `
+        <td>${e.ts}</td>
+        <td>${e.user}</td>
+        <td>${e.role}</td>
+        <td>${e.module}</td>
+        <td>${e.action}</td>
+        <td>${e.target || "-"}</td>
+        <td><span class="badge ${sevBadge}">${e.severity}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("auditCount").textContent = `Total audit entries: ${auditLog.length}`;
+  }
+
+  function clearAudit() {
+    auditLog.length = 0;
+    renderAudit();
+    // also log the event (meta) if logged in
+    if (currentUser) logAudit("Audit", "Cleared audit log", "", "Warning");
+  }
+
+  function seedAuditDemo() {
+    logAudit("Security", "Viewed access log report", "", "Info");
+    logAudit("Patients", "Viewed patient record", "PatientID=1", "Info");
+    logAudit("Patients", "Edited demographics", "PatientID=2", "Warning");
+    logAudit("Billing", "Exported claims summary", "Report=ClaimsSummary", "Warning");
+    logAudit("Security", "Failed login attempt detected", "Username=unknown", "Critical");
+  }
+
+  /**************
+   * Navigation handling
+   **************/
+  const navButtons = document.querySelectorAll(".nav-btn");
+  const views = document.querySelectorAll(".view");
+
+  navButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.disabled) return;
+
+      navButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      const target = btn.getAttribute("data-target");
+      views.forEach(v => v.style.display = (v.id === target) ? "block" : "none");
+
+      if (target === "appointments" || target === "labs") refreshPatientDropdowns();
+      if (target === "audit") logAudit("Audit", "Opened audit log panel", "", "Info");
+    });
+  });
+
+  function showView(viewId) {
+    navButtons.forEach(b => b.classList.remove("active"));
+    navButtons.forEach(b => {
+      if (b.getAttribute("data-target") === viewId) b.classList.add("active");
+    });
+    views.forEach(v => v.style.display = (v.id === viewId) ? "block" : "none");
+  }
+
+  function applyRolePermissions() {
+    const role = currentUser?.role;
+    const perms = rolePermissions[role] || { labs:false, messages:false, billing:false };
+
+    // buttons by target
+    const labsBtn = [...navButtons].find(b => b.getAttribute("data-target") === "labs");
+    const msgBtn  = [...navButtons].find(b => b.getAttribute("data-target") === "messages");
+    const billBtn = [...navButtons].find(b => b.getAttribute("data-target") === "billing");
+
+    labsBtn.disabled = !perms.labs;
+    msgBtn.disabled  = !perms.messages;
+    billBtn.disabled = !perms.billing;
+
+    // If current view is forbidden, redirect to Patients
+    const visibleView = [...views].find(v => v.style.display !== "none")?.id;
+    if ((visibleView === "labs" && !perms.labs) ||
+        (visibleView === "messages" && !perms.messages) ||
+        (visibleView === "billing" && !perms.billing)) {
+      showView("patients");
+    }
+  }
+
+  function openAudit() {
+    showView("audit");
+    renderAudit();
+    if (currentUser) logAudit("Audit", "Opened audit log panel", "", "Info");
+  }
+
+  /**************
+   * Render functions
+   **************/
+  function renderPatients() {
+    const tbody = document.getElementById("patientsTableBody");
+    tbody.innerHTML = "";
+    patients.forEach(p => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.id}</td>
+        <td>${p.lastName}, ${p.firstName}</td>
+        <td>${p.dob}</td>
+        <td>${p.phone || "-"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    refreshPatientDropdowns();
+  }
+
+  function refreshPatientDropdowns() {
+    const selects = [document.getElementById("appointmentPatient"), document.getElementById("labPatient")];
+    selects.forEach(sel => {
+      if (!sel) return;
+      const oldValue = sel.value;
+      sel.innerHTML = "";
+      patients.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = `${p.lastName}, ${p.firstName}`;
+        sel.appendChild(opt);
+      });
+      if (oldValue) sel.value = oldValue;
+    });
+  }
+
+  function renderAppointments() {
+    const tbody = document.getElementById("appointmentsTableBody");
+    tbody.innerHTML = "";
+    appointments.forEach(a => {
+      const patient = patients.find(p => p.id === a.patientId);
+      const patientName = patient ? `${patient.lastName}, ${patient.firstName}` : "Unknown";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${patientName}</td>
+        <td>${a.provider}</td>
+        <td>${a.dateTime}</td>
+        <td>${a.reason || "-"}</td>
+        <td><span class="badge badge-blue">Scheduled</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderLabs() {
+    const tbody = document.getElementById("labsTableBody");
+    tbody.innerHTML = "";
+    labs.forEach(l => {
+      const patient = patients.find(p => p.id === l.patientId);
+      const patientName = patient ? `${patient.lastName}, ${patient.firstName}` : "Unknown";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${patientName}</td>
+        <td>${l.test}</td>
+        <td>${l.value || "-"}</td>
+        <td>${l.date}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderMessages() {
+    const tbody = document.getElementById("messagesTableBody");
+    tbody.innerHTML = "";
+    messages.forEach(m => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${m.from}</td>
+        <td>${m.to}</td>
+        <td>${m.subject}</td>
+        <td>${m.time}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  /**************
+   * Actions + audit + error handling
+   **************/
+  function addPatient() {
+    const firstName = document.getElementById("patientFirstName").value.trim();
+    const lastName = document.getElementById("patientLastName").value.trim();
+    const dob = document.getElementById("patientDob").value;
+    const phone = document.getElementById("patientPhone").value.trim();
+
+    if (!firstName || !lastName || !dob) {
+      alert("Please fill in at least first name, last name, and date of birth.");
+      logAudit("Patients", "Validation error: missing required fields", `Input=${firstName} ${lastName} DOB=${dob}`, "Warning");
+      return;
+    }
+
+    const newId = nextPatientId++;
+    patients.push({ id: newId, firstName, lastName, dob, phone });
+
+    document.getElementById("patientFirstName").value = "";
+    document.getElementById("patientLastName").value = "";
+    document.getElementById("patientDob").value = "";
+    document.getElementById("patientPhone").value = "";
+
+    renderPatients();
+    logAudit("Patients", "Created patient record", `PatientID=${newId} (${lastName}, ${firstName})`, "Info");
+  }
+
+  function addAppointment() {
+    const patientId = parseInt(document.getElementById("appointmentPatient").value, 10);
+    const provider = document.getElementById("appointmentProvider").value;
+    const dateTime = document.getElementById("appointmentDateTime").value;
+    const reason = document.getElementById("appointmentReason").value.trim();
+
+    if (!patientId || !dateTime) {
+      alert("Please select a patient and date/time.");
+      logAudit("Appointments", "Validation error: missing patient or date/time", `PatientID=${patientId} DateTime=${dateTime}`, "Warning");
+      return;
+    }
+
+    appointments.push({ patientId, provider, dateTime, reason });
+    renderAppointments();
+    logAudit("Appointments", "Created appointment", `PatientID=${patientId} Provider=${provider} DateTime=${dateTime}`, "Info");
+    alert("Appointment created (demo only).");
+  }
+
+  function addLabResult() {
+    const role = currentUser?.role;
+    if (!rolePermissions[role]?.labs) {
+      alert("Access denied: your role does not have lab access.");
+      logAudit("Security", "Access denied to Lab Results", `Role=${role}`, "Critical");
+      return;
+    }
+
+    const patientId = parseInt(document.getElementById("labPatient").value, 10);
+    const test = document.getElementById("labTest").value.trim();
+    const value = document.getElementById("labValue").value.trim();
+    const date = document.getElementById("labDate").value;
+
+    if (!patientId || !test || !date) {
+      alert("Please select a patient, test name, and date.");
+      logAudit("Labs", "Validation error: missing required fields", `PatientID=${patientId} Test=${test} Date=${date}`, "Warning");
+      return;
+    }
+
+    labs.push({ patientId, test, value, date });
+    renderLabs();
+    logAudit("Labs", "Added lab result", `PatientID=${patientId} Test=${test} Date=${date}`, "Info");
+    alert("Lab result saved (demo only).");
+  }
+
+  function addMessage() {
+    const role = currentUser?.role;
+    if (!rolePermissions[role]?.messages) {
+      alert("Access denied: your role does not have secure messaging access.");
+      logAudit("Security", "Access denied to Secure Messages", `Role=${role}`, "Critical");
+      return;
+    }
+
+    const to = document.getElementById("messageTo").value;
+    const subject = document.getElementById("messageSubject").value.trim();
+    const body = document.getElementById("messageBody").value.trim();
+    const from = currentUser?.name || "Unknown";
+    const time = new Date().toLocaleTimeString();
+
+    if (!subject || !body) {
+      alert("Please enter subject and message body.");
+      logAudit("Messages", "Validation error: missing subject/body", `To=${to}`, "Warning");
+      return;
+    }
+
+    messages.push({ from, to, subject, body, time });
+    renderMessages();
+    logAudit("Messages", "Sent secure message", `To=${to} Subject=${subject}`, "Info");
+
+    document.getElementById("messageSubject").value = "";
+    document.getElementById("messageBody").value = "";
+  }
+
+  /**************
+   * Login / Logout
+   **************/
+  function login() {
+    const u = document.getElementById("loginUser").value.trim();
+    const p = document.getElementById("loginPass").value;
+
+    const found = demoUsers[u];
+    if (!found || found.password !== p) {
+      alert("Invalid username/password (demo).");
+      
+      currentUser = { username: u || "unknown", name: "Unknown", role: "Unknown" };
+      logAudit("Security", "Failed login attempt", `Username=${u || "blank"}`, "Critical");
+      currentUser = null;
+      return;
+    }
+
+    currentUser = { username: u, name: found.name, role: found.role };
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("userDisplay").textContent = `${found.name} (${found.role})`;
+
+    applyRolePermissions();
+    renderPatients();
+    renderAppointments();
+    renderLabs();
+    renderMessages();
+    renderAudit();
+
+    logAudit("Security", "User login successful", `Username=${u}`, "Info");
+    showView("patients");
+  }
+
+  function logout() {
+    if (!currentUser) return;
+    logAudit("Security", "User logged out", `Username=${currentUser.username}`, "Info");
+    currentUser = null;
+    document.getElementById("userDisplay").textContent = "Not logged in";
+    document.getElementById("loginOverlay").style.display = "flex";
+  }
+
+  // Initial state: force login
+  (function init() {
+   
+    renderPatients();
+    renderAppointments();
+    renderLabs();
+    renderMessages();
+    renderAudit();
+  })();
+</script>
+
+</body>
+</html>

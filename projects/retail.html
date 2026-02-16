@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Retail Sales Analytics Pipeline | Chelsea Rhea</title>
+  <meta name="description" content="Case study: Python batch ETL into BigQuery, KPI views, and Looker Studio dashboard." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    /* ---------- Hero layout ---------- */
+    .hero {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .hero h1{
+      margin:0;
+      font-size:26px;
+      letter-spacing:-.02em;
+    }
+
+    /* ---------- CTA buttons (smaller) ---------- */
+    .cta-row{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: var(--surface);
+      font-weight:700;
+      font-size:12px;
+      color:var(--ink);
+      cursor:pointer;
+    }
+    .btn.primary{
+      background: color-mix(in oklab,var(--primary) 12%, white);
+      border-color: color-mix(in oklab,var(--primary) 28%, var(--border));
+    }
+    .btn:hover{
+      background: color-mix(in oklab,var(--highlight) 16%, white);
+      border-color: color-mix(in oklab,var(--accent) 25%, var(--border));
+    }
+
+    /* ---------- KPI row (smaller) ---------- */
+    .kpi-mini{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:6px;
+      margin-top:8px;
+      min-width:150px;
+    }
+    .kpi-mini .kpi{
+      box-shadow: var(--shadow-soft);
+      padding:6px 10px;
+      transform: scale(0.9);
+      min-width:150px;
+    }
+    .kpi-title{ font-size:11px; }
+    .kpi-value{ font-size:18px; }
+    .kpi-trend{ font-size:11px; }
+
+    /* ---------- Pipeline steps (always one row; responsive scale) ---------- */
+    .pipeline-steps{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; /* cards + arrows */
+      align-items:center;
+      column-gap: clamp(6px, 1.2vw, 14px);
+      row-gap: 0;
+      margin-top:12px;
+      width:100%;
+    }
+
+    .pipe-step{
+      display:flex;
+      align-items:center;
+      gap: clamp(6px, 1vw, 12px);
+      padding: clamp(8px, 1.2vw, 16px) clamp(10px, 1.8vw, 18px);
+      border-radius: 18px;
+      background: var(--surface);
+      border:1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+
+      min-width:0;        /* allow shrinking */
+      width:100%;
+    }
+
+    .pipe-step img{
+      width: clamp(16px, 2vw, 28px);
+      height: clamp(16px, 2vw, 28px);
+      flex: 0 0 auto;
+    }
+
+    .pipe-step strong{
+      display:block;
+      font-size: clamp(11px, 1.25vw, 15px);
+      font-weight:900;
+      color:var(--ink);
+      line-height:1.1;
+      white-space:nowrap;
+    }
+
+    .pipe-step span{
+      font-size: clamp(9px, 1.05vw, 13px);
+      color:var(--muted);
+      font-weight:600;
+      line-height:1.15;
+
+      /* keep subtitles from stacking letters */
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      display:block;
+      max-width: 100%;
+    }
+
+    .pipe-arrow{
+      justify-self:center;
+      font-size: clamp(16px, 2.2vw, 38px);
+      font-weight: 900;
+      color: var(--accent);
+      line-height:1;
+      margin:0;
+      transform:none;
+    }
+/* ---------- Pipeline explorer ---------- */
+    .pipeline-wrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .stepper{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .step{
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      padding:8px 10px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .step.active{
+      background: color-mix(in oklab,var(--primary) 16%, white);
+      border-color: color-mix(in oklab,var(--primary) 30%, var(--border));
+    }
+
+    pre.code{
+      margin:10px 0 0;
+      padding:12px;
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 35%, white), white);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:auto;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--ink);
+    }
+    .note{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-weight:650;
+    }
+
+    /* ---------- Source data screenshot ---------- */
+    .source-preview{
+      margin-top: 10px;
+    }
+    .source-preview img{
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+    }
+
+    /* ---------- Dashboard embed ---------- */
+.embed{
+  /* full width, full-height container */
+  width: 100%;
+  height: 75vh;        /* fills the section visually */
+  min-height: 700px;   /* keeps it big on desktop */
+
+  /* remove the framed look */
+  padding: 0;
+  border: 0;
+  background: transparent;
+
+  /* keep clean corners */
+  border-radius: var(--radius-lg);
+  overflow: hidden;    /* IMPORTANT so iframe corners clip */
+}
+
+.embed iframe{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;    /* let the parent handle rounding */
+  display: block;      /* removes tiny gaps */
+}
+
+    /* ---------- Artifacts table: prevent squished/vertical text ---------- */
+    .table-wrap{ overflow:auto; } /* ensure horizontal scroll if needed */
+
+    table.artifacts-table{
+      min-width: 720px;           /* prevents the 1-letter wrap issue */
+      table-layout: fixed;
+    }
+    table.artifacts-table th{
+      white-space: nowrap;
+      word-break: keep-all;
+    }
+    table.artifacts-table td{
+      vertical-align: top;
+    }
+
+    /* Column sizing */
+    table.artifacts-table th:nth-child(1),
+    table.artifacts-table td:nth-child(1){
+      width: 96px;
+      white-space: nowrap;
+    }
+    table.artifacts-table th:nth-child(2),
+    table.artifacts-table td:nth-child(2){
+      width: 260px;
+      white-space: nowrap;
+    }
+    table.artifacts-table th:nth-child(3),
+    table.artifacts-table td:nth-child(3){
+      width: auto;
+      white-space: normal;          /* allow Purpose to wrap normally */
+      overflow-wrap: anywhere;
+    }
+
+    table.artifacts-table td code{
+      white-space: normal;          /* allow long names to wrap */
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+
+
+    @media (max-width: 900px){
+      .pipeline-wrap{ grid-template-columns: 1fr; }
+      .kpi-mini{ grid-template-columns: repeat(2,1fr); }
+    }
+
+    @media (max-width: 600px){
+      .cta-row{ gap:6px; }
+      .btn{ font-size:9px; padding:3px 6px; border-radius:8px; }
+      .pipeline-steps{
+        grid-template-columns: 1fr;
+        row-gap:8px;
+      }
+      .pipe-arrow{
+        transform: rotate(90deg);
+        font-size: 18px;
+        justify-self: start;
+      }
+      .pipe-step{
+        padding:6px 8px;
+        gap:6px;
+      }
+      .pipe-step img{
+        width:12px;
+        height:12px;
+      }
+      .pipe-step strong{ font-size:9px; }
+      .pipe-step span{ font-size:8px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+ <div class="brand">
+  <div class="logo">
+    <img src="../assets/profile.png" alt="Chelsea Rhea">
+  </div>
+
+        <div class="brand-text">
+          Chelsea Rhea
+          <small>Data Portfolio</small>
+        </div>
+      </div>
+
+    <nav class="menu">
+      <a class="item" href="../index.html">Home</a>
+      <a class="item active" href="../index.html#projects">Projects</a>
+      <a class="item" href="../index.html#resume">Resume</a>
+      <div class="divider"></div>
+      <a class="item" href="https://github.com/" target="_blank">GitHub</a>
+      <a class="item" href="https://www.linkedin.com/" target="_blank">LinkedIn</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      © <span id="year"></span> Chelsea Rhea
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+
+
+    <main class="content">
+
+      <!-- Hero -->
+      <section class="card">
+        <div class="hero">
+
+          <div>
+            <h1>Retail Sales Analytics Pipeline</h1>
+
+            <div class="pipeline-steps">
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/files/EE6C4D">
+                <div><strong>Source</strong><span>CSV</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/python/EE6C4D">
+                <div><strong>ETL</strong><span>Python </span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/googlebigquery/EE6C4D">
+                <div><strong>Warehouse</strong><span>BigQuery </span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="https://cdn.simpleicons.org/looker/EE6C4D">
+                <div><strong>BI Layer</strong><span>Looker Studio </span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <a class="btn primary" href="../projects.html">← Back</a>
+            <a class="btn" href="https://github.com/ChelseaRhea222/retail-sales-batch-analytics/tree/main" target="_blank">GitHub</a>
+            <a class="btn" href="#dashboard">Dashboard</a>
+          </div>
+
+        </div>
+      <!-- Pipeline Explorer -->
+
+        <section class="pipeline-wrap" aria-label="Pipeline explorer">
+          <article class="card" aria-label="Pipeline steps">
+            <div class="card-head">
+              <h3>Pipeline Explorer</h3>
+              <div class="legend">
+                <span class="pill">Click a step</span>
+              </div>
+            </div>
+
+            <div class="stepper" role="tablist" aria-label="Pipeline steps">
+              <div class="step active" role="tab" tabindex="0" data-step="extract">Extract</div>
+              <div class="step" role="tab" tabindex="0" data-step="validate">Validate</div>
+              <div class="step" role="tab" tabindex="0" data-step="load">Load</div>
+              <div class="step" role="tab" tabindex="0" data-step="transform">Transform </div>
+            </div>
+
+            <p id="stepTitle" class="note" style="font-weight:900; color:var(--ink); margin-top:12px;">
+              Extract: read CSV from <code>data/raw</code>
+            </p>
+
+            <pre class="code" id="stepCode"><code># ingestion/load_to_bigquery.py (excerpt)
+df = pd.read_csv(csv_path)
+df.columns = (
+  df.columns.astype(str).str.strip().str.lower()
+    .str.replace(r"[^a-z0-9]+", "_", regex=True).str.strip("_")
+)
+df = df.dropna(how="all")</code></pre>
+
+          </article>
+
+        </section>
+
+        <!-- Source Data -->
+        <section class="card" style="margin-top:14px;" aria-label="Source data">
+          <div class="card-head">
+            <h3>Source Data CSV</h3>
+            <div class="legend">
+            </div>
+          </div>
+
+          <div class="source-preview">
+            <img src="../assets/retail_csv.PNG" alt="Source retail CSV screenshot" />
+          </div>
+        </section>
+
+        <!-- BigQuery Load -->
+        <section class="card" style="margin-top:14px;" aria-label="BigQuery load">
+          <div class="card-head">
+            <h3>BigQuery Load</h3>
+            <div class="legend">
+            </div>
+          </div>
+
+          <div class="source-preview">
+            <img src="../assets/raw_stg.PNG" alt="BigQuery raw to staging screenshot" />
+          </div>
+        </section>
+
+        <!-- Transformed -->
+        <section class="card" style="margin-top:14px;" aria-label="Transformed data">
+          <div class="card-head">
+            <h3>Transformed</h3>
+            <div class="legend">
+            </div>
+          </div>
+
+          <div class="source-preview">
+            <img src="../assets/stg_sales.PNG" alt="Transformed staging sales screenshot" />
+          </div>
+        </section>
+
+        <!-- Dashboard Embed -->
+        <section class="card" id="dashboard" style="margin-top:14px;" aria-label="Dashboard embed">
+          <div class="card-head">
+            <h3>Live Dashboard (Looker Studio)</h3>
+            <div class="legend">
+              <span class="pill">Embedded</span>
+            </div>
+          </div>
+
+          <!-- Replace the placeholder with your Looker iframe when ready -->
+          <div class="embed">
+<iframe src="https://lookerstudio.google.com/embed/reporting/42b7f27c-8338-4047-ade9-f086bc4db99b/page/tp3kF" frameborder="0" style="border:0" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+</div>
+
+          
+            </div>
+          </div>
+        </section>
+
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // (Optional) if you have this span in your sidebar/footer
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  const steps = {
+    extract: {
+      title: 'Extract: read CSV from data/raw',
+      code: `# load_to_bigquery.py
+    # ===== EXTRACT =====
+    # Read source CSV into a DataFrame.
+    csv_path = find_first_csv(raw_dir)
+    print(f"Reading: {csv_path}")
+
+    df = pd.read_csv(csv_path)`,
+      tags: ['Input: Warehouse_and_Retail_Sales.csv','Output: DataFrame']
+    },
+    validate: {
+      title: 'Validate: enforce types + quick data checks',
+      code: `# load_to_bigquery.py
+    # ===== VALIDATE =====
+    # Standardize column names and remove fully empty rows.
+    df.columns = (
+        df.columns.astype(str)
+        .str.strip().str.lower()
+        .str.replace(r"[^a-z0-9]+", "_", regex=True)
+        .str.strip("_")
+    )
+    df = df.dropna(how="all")
+
+    # Convert calendar fields to nullable integers when present.
+    if "year" in df.columns:
+        df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
+    if "month" in df.columns:
+        df["month"] = pd.to_numeric(df["month"], errors="coerce").astype("Int64")
+
+    # Convert measure columns to numeric values when they exist.
+    for c in ["retail_sales", "retail_transfers", "warehouse_sales"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    # Log a quick preview of load shape.
+    print("Columns:", list(df.columns))
+    print("Rows:", len(df))`,
+      tags: ['Checks: dtypes','Checks: null counts']
+    },
+    load: {
+      title: 'Load: write to BigQuery raw table',
+      code: `# load_to_bigquery.py (excerpt)
+    # ===== LOAD =====
+    # Initialize BigQuery client and ensure dataset exists.
+    client = bigquery.Client(project=PROJECT_ID)
+
+    client.create_dataset(f"{PROJECT_ID}.{DATASET_ID}", exists_ok=True)
+
+    # Set destination table and overwrite behavior for each run.
+    table_ref = f"{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}"
+
+    job_config = bigquery.LoadJobConfig(
+        write_disposition="WRITE_TRUNCATE",
+        autodetect=True,
+    )
+
+    # Start load job and wait for completion.
+    print(f"Loading to BigQuery: {table_ref}")
+    load_job = client.load_table_from_dataframe(df, table_ref, job_config=job_config)
+    load_job.result()
+
+    # Fetch table metadata and print the loaded row count.
+    table = client.get_table(table_ref)
+    print(f" Loaded {table.num_rows} rows into {table.full_table_id}")
+`,
+      tags: ['Output: retail_dw.raw_sales','Mode: batch truncate-load']
+    },
+    transform: {
+      title: 'Transform: create stg_sales view',
+      code: `# /bigquery_01_staging.sql 
+SELECT
+  DATE(CAST(year AS INT64), CAST(month AS INT64), 1) AS month_date,
+  TRIM(supplier) AS supplier,
+  ...
+  (CAST(retail_sales AS FLOAT64)
+   + CAST(retail_transfers AS FLOAT64)
+   + CAST(warehouse_sales AS FLOAT64)) AS total_movement
+FROM \`retail-sales-analytics-484115.retail_dw.raw_sales\`;`,
+      tags: ['Output: retail_dw.stg_sales','Type: BigQuery view']
+    },
+    model: {
+      title: 'Model (KPIs): create KPI views',
+      desc: 'Creates reusable KPI views for monthly trends, top items, and top suppliers (BI-ready).',
+      code: `-- sql/bigquery_02_kpis.sql (excerpt)
+CREATE OR REPLACE VIEW \`...v_kpi_monthly_trend\` AS
+SELECT month_date, SUM(total_movement) AS total_movement
+FROM \`...stg_sales\`
+GROUP BY month_date;
+
+CREATE OR REPLACE VIEW \`...v_kpi_top_items\` AS
+SELECT item_description, SUM(retail_sales) AS retail_sales
+FROM \`...stg_sales\`
+GROUP BY item_description
+ORDER BY retail_sales DESC
+LIMIT 10;`,
+      tags: ['Outputs: 3 KPI views','BI-ready layer']
+    },
+    visualize: {
+      title: 'Visualize: Looker Studio connected to BigQuery views',
+      desc: 'Looker Studio uses the KPI views directly, so charts refresh from the warehouse layer without exporting CSVs.',
+      code: `Looker Studio connection:
+BigQuery → retail_dw → v_kpi_monthly_trend / v_kpi_top_items / v_kpi_top_suppliers
+
+Recommended charts:
+• Time series: total_movement by month_date
+• Tables: top items / top suppliers
+• Scorecards: totals`,
+      tags: ['Output: Embedded dashboard','Source: BigQuery views']
+    }
+  };
+
+  const titleEl = document.getElementById("stepTitle");
+  const descEl = document.getElementById("stepDesc");
+  const codeEl = document.getElementById("stepCode");
+  const stepEls = Array.from(document.querySelectorAll(".step"));
+
+  function setStep(key){
+    stepEls.forEach(s => s.classList.toggle("active", s.dataset.step === key));
+    const s = steps[key];
+    if (!s) return;
+
+    titleEl.textContent = s.title;
+    descEl.textContent = s.desc;
+
+    // IMPORTANT: your HTML has <pre id="stepCode"><code>...</code></pre>
+    const innerCode = codeEl.querySelector("code") || codeEl;
+    innerCode.textContent = s.code;
+  }
+
+  stepEls.forEach(el => {
+    el.addEventListener("click", () => setStep(el.dataset.step));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") setStep(el.dataset.step);
+    });
+  });
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reservation + Table Selection App | Chelsea Rhea</title>
+  <meta name="description" content="Case study: Flutter reservation demo backed by Oracle Autonomous Database + ORDS REST endpoints." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    /* ---------- Hero layout ---------- */
+    .hero{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .hero h1{
+      margin:0;
+      font-size:26px;
+      letter-spacing:-.02em;
+    }
+
+    /* ---------- CTA buttons (smaller) ---------- */
+    .cta-row{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: var(--surface);
+      font-weight:700;
+      font-size:12px;
+      color:var(--ink);
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .btn.primary{
+      background: color-mix(in oklab,var(--primary) 12%, white);
+      border-color: color-mix(in oklab,var(--primary) 28%, var(--border));
+    }
+    .btn:hover{
+      background: color-mix(in oklab,var(--highlight) 16%, white);
+      border-color: color-mix(in oklab,var(--accent) 25%, var(--border));
+    }
+
+    /* ---------- KPI row (smaller) ---------- */
+    .kpi-mini{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:6px;
+      margin-top:8px;
+      min-width:150px;
+    }
+    .kpi-mini .kpi{
+      box-shadow: var(--shadow-soft);
+      padding:6px 10px;
+      transform: scale(0.9);
+      min-width:150px;
+    }
+    .kpi-title{ font-size:11px; }
+    .kpi-value{ font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kpi-trend{ font-size:11px; }
+
+    /* ---------- Pipeline steps (match LLM page) ---------- */
+    .pipeline-steps{
+          /* ✅ Always 1 row: step, arrow, step, arrow... */
+          display:grid;
+          grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+          align-items:center;
+          gap: clamp(6px, 1.2vw, 14px);
+          margin-top:12px;
+          width:100%;
+        }
+        .pipe-step{
+          display:flex;
+          align-items:center;
+          gap: clamp(6px, 1vw, 12px);
+    
+          padding: clamp(8px, 1.2vw, 16px) clamp(10px, 1.8vw, 20px);
+          border-radius:18px;
+          background: var(--surface);
+          border:1px solid var(--border);
+          box-shadow: var(--shadow-soft);
+    
+          min-width: 0;   /* allow shrinking in grid */
+        }
+        .pipe-step img{
+          width: clamp(14px, 2vw, 28px);
+          height: clamp(14px, 2vw, 28px);
+          flex: 0 0 auto;
+        }
+        .pipe-step strong{
+          display:block;
+          font-size: clamp(11px, 1.3vw, 15px);
+          font-weight:900;
+          color:var(--ink);
+          line-height:1.1;
+        }
+        .pipe-step span{
+          font-size: clamp(9px, 1.1vw, 13px);
+          color:var(--muted);
+          font-weight:600;
+    
+          /* ✅ prevent weird wrapping; truncate nicely */
+          display:block;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+        }
+    
+        .pipe-step > div{
+          min-width:0; /* allows ellipsis to work */
+        }
+    
+        .pipe-arrow{
+          font-size: clamp(16px, 2.5vw, 40px);
+          font-weight: 900;
+          color: var(--accent);
+          margin: 0 4px;
+          line-height: 1;
+        }
+
+/* ---------- Pipeline explorer ---------- */
+.pipeline-wrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    .stepper{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .step{
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      padding:8px 10px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .step.active{
+      background: color-mix(in oklab,var(--primary) 16%, white);
+      border-color: color-mix(in oklab,var(--primary) 30%, var(--border));
+    }
+
+    pre.code{
+      margin:10px 0 0;
+      padding:12px;
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 35%, white), white);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:auto;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--ink);
+    }
+    .note{
+      margin:10px 0 0;
+      color:var(--muted);
+      font-weight:650;
+    }
+
+    /* ---------- Demo embed (Flutter Web) ---------- */
+    .embed{
+      border:1px dashed color-mix(in oklab,var(--primary) 35%, var(--border));
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 45%, white), white);
+      min-height:520px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      text-align:center;
+      color:var(--muted);
+      font-weight:750;
+    }
+    .embed iframe{
+      width:100%;
+      height:980px;
+      border:0;
+      border-radius:14px;
+    }
+    .oracle-shot{
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      margin-top: 10px;
+    }
+
+    /* ---------- Endpoint list ---------- */
+    .endpoint{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .endpoint .tag{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: var(--surface-2);
+      font-weight:900;
+      font-size:12px;
+      color:var(--ink);
+      white-space:nowrap;
+    }
+    .endpoint code{
+      flex:1 1 280px;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, color-mix(in oklab,var(--bg-2) 25%, white), white);
+      overflow:auto;
+      font-size:12px;
+    }
+
+    /* ---------- Table preview ---------- */
+    .table-title{
+      margin:12px 0 6px;
+      font-weight:900;
+      color:var(--ink);
+      font-size:13px;
+      letter-spacing:-.01em;
+    }
+
+    @media (max-width: 900px){
+      .pipeline-wrap{ grid-template-columns: 1fr; }
+      .kpi-mini{ grid-template-columns: repeat(2,1fr); }
+      .pipeline-steps{ flex-direction:column; align-items:flex-start; }
+      .pipe-arrow{ transform: rotate(90deg); }
+      .embed iframe{ height:1080px; }
+    }
+    @media (max-width: 600px){
+      .cta-row{ gap:6px; }
+      .btn{ font-size:9px; padding:3px 6px; border-radius:8px; }
+      .embed iframe{ height:1180px; }
+      .pipeline-steps{
+        grid-template-columns: 1fr;
+        row-gap:8px;
+      }
+      .pipe-arrow{
+        transform: rotate(90deg);
+        font-size: 18px;
+        justify-self: start;
+      }
+      .pipe-step{
+        padding:6px 8px;
+        gap:6px;
+      }
+      .pipe-step img{
+        width:12px;
+        height:12px;
+      }
+      .pipe-step strong{ font-size:9px; }
+      .pipe-step span{ font-size:8px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="brand">
+  <div class="logo">
+    <img src="../assets/profile.png" alt="Chelsea Rhea">
+  </div>
+
+        <div class="brand-text">
+          Chelsea Rhea
+          <small>Data Portfolio</small>
+        </div>
+      </div>
+
+    <nav class="menu">
+      <a class="item" href="../index.html">Home</a>
+      <a class="item active" href="../index.html#projects">Projects</a>
+      <a class="item" href="../index.html#resume">Resume</a>
+
+      <div class="divider"></div>
+      <a class="item" href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      <a class="item" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      © <span id="year"></span> Chelsea Rhea
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <main class="content">
+
+      <!-- Hero -->
+      <section class="card">
+        <div class="hero">
+          <div>
+            <h1>Reservation + Table Selection App</h1>
+
+            <div class="pipeline-steps">
+              <div class="pipe-step">
+             <img src="https://cdn.simpleicons.org/html5" alt="HTML">
+                <div><strong>Development</strong><span>HTML/JavaScript</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="../assets/icons/oracle-ring.svg" alt="Oracle">
+                <div><strong>Database</strong><span>Oracle</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="../assets/icons/sql-db.svg" alt="SQL">
+                <div><strong>Schema</strong><span>SQL</span></div>
+              </div>
+
+              <div class="pipe-arrow">→</div>
+
+              <div class="pipe-step">
+                <img src="../assets/icons/REST-API.svg" alt="ORDS">
+                <div><strong>API Layer</strong><span>ORDS</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-row">
+            <a class="btn primary" href="../projects.html">← Back</a>
+            <a class="btn" href="#demo">Demo</a>
+            <a class="btn" href="#backend">Backend</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pipeline Explorer -->
+      <section class="pipeline-wrap" aria-label="Pipeline explorer">
+        <article class="card" aria-label="Pipeline steps">
+          <div class="card-head">
+            <h3>Pipeline Explorer</h3>
+            <div class="legend">
+              <span class="pill">Click a step</span>
+            </div>
+          </div>
+
+          <div class="stepper" role="tablist" aria-label="Pipeline steps">
+            <div class="step active" role="tab" tabindex="0" data-step="client">Client</div>
+            <div class="step" role="tab" tabindex="0" data-step="seats">Load Seats</div>
+            <div class="step" role="tab" tabindex="0" data-step="hold">Hold Seat</div>
+            <div class="step" role="tab" tabindex="0" data-step="confirm">Confirm</div>
+            <div class="step" role="tab" tabindex="0" data-step="db">Database</div>
+            <div class="step" role="tab" tabindex="0" data-step="ords">ORDS</div>
+          </div>
+
+          <p id="stepTitle" class="note" style="font-weight:900; color:var(--ink); margin-top:12px;">
+            Client: HTML/CSS/JS seat map for selecting seats and confirming a reservation.
+          </p>
+
+
+          <pre class="code" id="stepCode"><code>// JavaScript (concept) — load seats
+const params = new URLSearchParams({ datetime: iso, party_size: partySize });
+const res = await fetch(`${availabilityUrl}?${params}`);
+const data = await res.json();
+renderSeats(data);</code></pre>
+
+
+        </article>
+
+
+      </section>
+
+      <!-- Demo Embed -->
+      <section class="card" id="demo" style="margin-top:14px;" aria-label="Demo embed">
+        <div class="card-head">
+          <h3>Interactive Demo </h3>
+        </div>
+
+        <div class="embed">
+          <!-- Replace src when your Flutter web build is deployed inside your site -->
+          <iframe
+            src="./reservation_app.html"
+            title="Reservation App Demo"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          ></iframe>
+        </div>
+
+      </section>
+
+      <!-- Entity Relationship Diagram -->
+      <section class="card" style="margin-top:14px;" aria-label="Entity relationship diagram screenshot">
+        <div class="card-head">
+          <h3>Entity Relationship Diagram</h3>
+        </div>
+        <img class="oracle-shot" src="../assets/reservation_ERD.PNG" alt="Entity Relationship Diagram for reservation database">
+      </section>
+
+      <!-- Oracle Tables -->
+      <section class="card" style="margin-top:14px;" aria-label="Oracle tables screenshot">
+        <div class="card-head">
+          <h3>Oracle Tables</h3>
+        </div>
+        <img class="oracle-shot" src="../assets/res_table.PNG" alt="Oracle tables screenshot">
+      </section>
+
+      <!-- Backend -->
+      <section class="card" id="backend" style="margin-top:14px;">
+        <div class="card-head">
+          <h3>Backend (Oracle + ORDS)</h3>
+
+        </div>
+
+
+        <div class="endpoint">
+          <span class="tag">GET</span>
+          <code id="seatsUrl">Set ORDS_BASE in the script below</code>
+        </div>
+        <div class="endpoint">
+          <span class="tag">POST</span>
+          <code id="reserveUrl">Set reserve endpoint in the script below</code>
+        </div>
+
+        
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // Footer year
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // ================= Pipeline Explorer (click steps) =================
+  const steps = {
+    client: {
+      title: "Client: HTML/CSS/JS seat map for selecting seats and confirming a reservation.",
+      code: `// JavaScript (concept) — load seats
+const params = new URLSearchParams({ datetime: iso, party_size: partySize });
+const res = await fetch(\`\${availabilityUrl}?\${params}\`);
+const data = await res.json();
+renderSeats(data);`,
+      tags: ["UI: Seat map", "Calls: HTTPS endpoints"]
+    },
+    seats: {
+      title: "Load Seats: GET availability + layout",
+      code: `GET /availability?datetime=...&party_size=...
+
+Response (example):
+[
+  { "id": 1, "area": "bar", "kind": "stool", "capacity": 1, "status": "available" },
+  ...
+]`,
+      tags: ["Endpoint: /availability", "Output: JSON seats[]"]
+    },
+    hold: {
+      title: "Hold Seat: optional soft hold during selection",
+      code: `POST /hold_seat
+{ "seat_id": 12, "user": "session-123" }`,
+      tags: ["Optional endpoint", "State: available → held"]
+    },
+    confirm: {
+      title: "Confirm Reservation: create reservation + lock seats",
+      code: `POST /reserve
+{
+  "datetime": "2026-02-10T19:00:00Z",
+  "party_size": 2,
+  "seat_ids": [12, 13]
+}`,
+      tags: ["Writes: 2 tables", "State: held → reserved"]
+    },
+    db: {
+      title: "Database: relational schema backing availability + reservations",
+      desc: "Core entities are SEATS, RESERVATIONS, and RESERVATION_SEATS (join table).",
+      code: `-- Tables (concept)
+SEATS(id, area, kind, capacity, status, held_by, hold_until, updated_at)
+RESERVATIONS(reservation_id, reserved_at, party_size, created_at)
+RESERVATION_SEATS(reservation_id, seat_id)`,
+      tags: ["Oracle ADB", "Relational model"]
+    },
+    ords: {
+      title: "API Layer: HTTPS endpoints for the web app",
+      desc: "ORDS (or any API layer) exposes endpoints so the HTML/JS client can talk to the database safely.",
+      code: `API endpoints (examples):
+GET  /availability
+POST /reserve
+POST /hold_seat
+POST /release_seat`,
+      tags: ["HTTPS + JSON", "Serverless-friendly"]
+    }
+  };
+
+  const titleEl = document.getElementById("stepTitle");
+  const descEl  = document.getElementById("stepDesc");
+  const codeEl  = document.getElementById("stepCode");
+  const tagsEl  = document.getElementById("stepTags");
+  const stepEls = Array.from(document.querySelectorAll(".step"));
+
+  function setStep(key){
+    stepEls.forEach(s => s.classList.toggle("active", s.dataset.step === key));
+    const s = steps[key];
+    if (!s) return;
+
+    titleEl.textContent = s.title;
+    descEl.textContent  = s.desc;
+
+    const innerCode = codeEl.querySelector("code") || codeEl;
+    innerCode.textContent = s.code;
+
+    if (tagsEl){
+      tagsEl.innerHTML = "";
+      s.tags.forEach((t, i) => {
+        const span = document.createElement("span");
+        span.className = "pill" + (i === 1 ? " alt" : "");
+        span.textContent = t;
+        tagsEl.appendChild(span);
+      });
+    }
+  }
+
+  stepEls.forEach(el => {
+    el.addEventListener("click", () => setStep(el.dataset.step));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") setStep(el.dataset.step);
+    });
+  });
+  // ================= Backend preview wiring =================
+  // If you have ORDS endpoints, set ORDS_BASE + ORDS_SCHEMA.
+  const ORDS_BASE = "";   // e.g. "https://xxxx.oraclecloudapps.com/ords"
+  const ORDS_SCHEMA = ""; // e.g. "admin"
+
+  // Default fallback uses your live reservation demo API.
+  const FALLBACK_ENDPOINTS = {
+    seats: "https://chelsea-rhea.com/api/availability.php",
+    reserve: "https://chelsea-rhea.com/api/reserve.php",
+  };
+
+  const statusPill = document.getElementById("statusPill");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  const endpoints = (ORDS_BASE && ORDS_SCHEMA) ? {
+    seats: `${ORDS_BASE}/${ORDS_SCHEMA}/seats/`,
+    reserve: `${ORDS_BASE}/${ORDS_SCHEMA}/reserve/`,
+  } : FALLBACK_ENDPOINTS;
+
+  function setStatus(t){ if (statusPill) statusPill.textContent = t; }
+
+  function extractRows(payload){
+    if (Array.isArray(payload)) return payload;
+    if (payload && Array.isArray(payload.items)) return payload.items;
+    if (payload && Array.isArray(payload.data)) return payload.data;
+    return [];
+  }
+
+  function renderTable(tableEl, items, cols, emptyMessage = "No rows yet"){
+    if (!tableEl) return;
+    if (!items || items.length === 0){
+      tableEl.innerHTML = `<thead><tr>${cols.map(c=>`<th>${c.header}</th>`).join("")}</tr></thead>
+                           <tbody><tr><td colspan="${cols.length}" class="note">${emptyMessage}</td></tr></tbody>`;
+      return;
+    }
+    tableEl.innerHTML =
+      `<thead><tr>${cols.map(c=>`<th>${c.header}</th>`).join("")}</tr></thead>` +
+      `<tbody>` +
+        items.map(r => `<tr>${cols.map(c=>`<td>${c.value(r) ?? ""}</td>`).join("")}</tr>`).join("") +
+      `</tbody>`;
+  }
+
+  async function fetchRows(url){
+    const r = await fetch(url, { method:"GET" });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    const json = await r.json();
+    return extractRows(json);
+  }
+
+  async function refreshAll(){
+    document.getElementById("seatsUrl").textContent = endpoints.seats || "Not configured";
+    document.getElementById("reserveUrl").textContent = endpoints.reserve || "Not configured";
+
+    setStatus("Loading...");
+
+    const seatCols = [
+      { header:"ID", value:r => r.id ?? r.seat_id ?? "" },
+      { header:"Area", value:r => r.area ?? "" },
+      { header:"Kind", value:r => r.kind ?? "" },
+      { header:"Cap", value:r => r.capacity ?? "" },
+      { header:"Status", value:r => (r.status ?? (r.available_for_selected_time === true ? "available" : r.available_for_selected_time === false ? "reserved" : "")) },
+    ];
+    const tasks = await Promise.allSettled([
+      endpoints.seats ? fetchRows(endpoints.seats) : Promise.resolve(null),
+    ]);
+
+    const seatsResult = tasks[0];
+
+    if (seatsResult.status === "fulfilled" && Array.isArray(seatsResult.value)){
+      renderTable(document.getElementById("seatsTable"), seatsResult.value, seatCols);
+    } else {
+      renderTable(document.getElementById("seatsTable"), [], seatCols, endpoints.seats ? "Could not load seats" : "Endpoint not configured");
+    }
+
+    const allFailed = tasks.every(t => t.status === "rejected");
+    const hasConfiguredEndpoint = [endpoints.seats].some(Boolean);
+    if (!hasConfiguredEndpoint){
+      setStatus("Not configured");
+    } else if (allFailed){
+      setStatus("Error (check console/CORS)");
+    } else {
+      setStatus("Live");
+    }
+  }
+
+  if (refreshBtn) refreshBtn.addEventListener("click", refreshAll);
+  refreshAll();
+
+</script>
+
+</body>
+</html>
+
